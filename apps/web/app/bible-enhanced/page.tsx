@@ -14,7 +14,7 @@ export default function EnhancedBiblePage() {
   const { currentBook, currentChapter, progress } = useBibleNavigation();
   const { bookmarkCount, stats } = useBookmarks();
 
-  const handleVerseSelect = (verse: any) => {
+  const handleVerseSelect = (verse: { reference: string }) => {
     setSelectedVerse(verse.reference);
     // In a real app, you might show a modal or navigate to a verse detail page
     console.log('Selected verse:', verse);
