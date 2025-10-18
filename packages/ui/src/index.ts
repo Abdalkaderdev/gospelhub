@@ -8,6 +8,8 @@ export * from './components/BibleReader';
 export * from './components/MobileBibleReader';
 export * from './components/BookmarkManager';
 export * from './components/ReadingProgress';
+export * from './components/EnhancedBibleReader';
+export * from './components/EnhancedBookmarkManager';
 
 // Re-export types
 export * from './types';

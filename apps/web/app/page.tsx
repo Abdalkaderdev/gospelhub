@@ -7,8 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to the Bible reader page
-    router.push('/bible');
+    // Redirect to the enhanced Bible reader page
+    router.push('/bible-enhanced');
   }, [router]);
 
   return (
