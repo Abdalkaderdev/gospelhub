@@ -1,0 +1,25 @@
+{
+  "name": "gospelhub",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "@turbo/gen": "^1.10.12",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "turbo": "latest",
+    "typescript": "^5.2.2"
+  },
+  "packageManager": "npm@10.2.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
