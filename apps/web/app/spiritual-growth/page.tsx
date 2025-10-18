@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Layout, ReadingPlanCard, PromiseCard, BagItemCard, DictionaryEntryCard } from '@gospelhub/ui';
+import { PWALayout, ReadingPlanCard, PromiseCard, BagItemCard, DictionaryEntryCard, MobileNavigation } from '@gospelhub/ui';
 import { 
   ReadingPlanService, 
   PromiseService, 
@@ -18,6 +18,8 @@ import {
 export default function SpiritualGrowthPage() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [activeTab, setActiveTab] = useState<'plans' | 'promises' | 'bag' | 'dictionary'>('plans');
+  const [isMobile, setIsMobile] = useState(false);
+  // const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Services
@@ -47,6 +49,17 @@ export default function SpiritualGrowthPage() {
     };
 
     initializeServices();
+  }, []);
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Load data
@@ -173,19 +186,19 @@ export default function SpiritualGrowthPage() {
 
   if (isLoading) {
     return (
-      <Layout theme={theme} onThemeChange={setTheme}>
+      <PWALayout theme={theme} onThemeChange={setTheme}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">Loading Spiritual Growth Tools...</p>
           </div>
         </div>
-      </Layout>
+      </PWALayout>
     );
   }
 
   return (
-    <Layout theme={theme} onThemeChange={setTheme}>
+    <PWALayout theme={theme} onThemeChange={setTheme}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 shadow-sm">
@@ -229,7 +242,7 @@ export default function SpiritualGrowthPage() {
         </div>
 
         {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${isMobile ? 'pb-20' : ''}`}>
           {/* Reading Plans Tab */}
           {activeTab === 'plans' && (
             <div>
@@ -362,7 +375,21 @@ export default function SpiritualGrowthPage() {
             </div>
           )}
         </div>
+
+        {/* Mobile Navigation */}
+        {isMobile && (
+          <MobileNavigation
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab as 'plans' | 'promises' | 'bag' | 'dictionary')}
+            tabs={[
+              { id: 'plans', label: 'Plans', icon: '📖' },
+              { id: 'promises', label: 'Promises', icon: '✨' },
+              { id: 'bag', label: 'Bag', icon: '🎒' },
+              { id: 'dictionary', label: 'Dictionary', icon: '📚' }
+            ]}
+          />
+        )}
       </div>
-    </Layout>
+    </PWALayout>
   );
 }
