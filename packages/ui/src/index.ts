@@ -4,6 +4,10 @@ export * from './components/BibleNavigator';
 export * from './components/SearchBar';
 export * from './components/Layout';
 export * from './components/ThemeToggle';
+export * from './components/BibleReader';
+export * from './components/MobileBibleReader';
+export * from './components/BookmarkManager';
+export * from './components/ReadingProgress';
 
 // Re-export types
 export * from './types';
