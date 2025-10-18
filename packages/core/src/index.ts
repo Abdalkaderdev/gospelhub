@@ -7,7 +7,6 @@ export * from './search';
 export * from './storage';
 export * from './bible-books';
 export * from './bookmarks';
-export * from './reading-progress';
 
 // Export enhanced data service
 export * from './bible-data-enhanced';
@@ -22,3 +21,17 @@ export * from './hooks/useBible';
 export * from './hooks/useBibleNavigation';
 export * from './hooks/useSearch';
 export * from './hooks/useBookmarks';
+
+// Export spiritual growth types
+export * from './types/spiritual-growth';
+
+// Export spiritual growth data
+export * from './data/reading-plans';
+export * from './data/gods-promises';
+export * from './data/bible-dictionary';
+
+// Export spiritual growth services
+export * from './services/readingPlanService';
+export * from './services/promiseService';
+export * from './services/bagService';
+export * from './services/dictionaryService';

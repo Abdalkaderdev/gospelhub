@@ -1,117 +1,9 @@
-// Bible data types
-export interface Verse {
-  book: string;
-  chapter: number;
-  verse: number;
-  text: string;
-  reference: string;
-}
-
-export interface BibleBook {
-  name: string;
-  abbreviation: string;
-  chapters: number;
-  testament: 'old' | 'new';
-  order: number;
-}
-
-export interface BibleChapter {
-  book: string;
-  chapter: number;
-  verses: Verse[];
-}
-
-// Search types
-export interface SearchResult {
-  verse: Verse;
-  score: number;
-  highlights: string[];
-}
-
-export interface SearchOptions {
-  limit?: number;
-  threshold?: number;
-  includeHighlights?: boolean;
-}
-
-// Storage types
-export interface StorageAdapter {
-  getItem(key: string): Promise<string | null>;
-  setItem(key: string, value: string): Promise<void>;
-  removeItem(key: string): Promise<void>;
-  clear(): Promise<void>;
-}
-
-// UI component props
-export interface VerseCardProps {
-  verse: Verse;
-  onBookmark?: (verse: Verse) => void;
-  isBookmarked?: boolean;
-  className?: string;
-}
-
-export interface BibleNavigatorProps {
-  onBookSelect: (book: string) => void;
-  onChapterSelect: (book: string, chapter: number) => void;
-  selectedBook?: string;
-  selectedChapter?: number;
-  className?: string;
-}
-
-export interface SearchBarProps {
-  onSearch: (query: string) => void;
-  placeholder?: string;
-  className?: string;
-}
-
-// Theme types
-export type Theme = 'light' | 'dark' | 'system';
-
-export interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  resolvedTheme: 'light' | 'dark';
-}
-
-// Navigation types
-export interface NavigationItem {
-  label: string;
-  href: string;
-  icon?: string;
-  badge?: string;
-}
-
-// App state types
-export interface AppState {
-  currentBook: string;
-  currentChapter: number;
-  bookmarks: string[];
-  searchQuery: string;
-  searchResults: SearchResult[];
-  theme: Theme;
-  isLoading: boolean;
-}
-
-// API types
-export interface BibleAPIResponse {
-  verses: Verse[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-export interface BibleAPIError {
-  message: string;
-  code: string;
-  status: number;
-}
-
-// Spiritual Growth Types
+// Reading Plans Types
 export interface ReadingPlan {
   id: string;
   name: string;
   description: string;
-  duration: number;
+  duration: number; // in days
   totalDays: number;
   category: 'bible-in-year' | 'new-testament' | 'psalms-proverbs' | 'custom';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
@@ -122,7 +14,7 @@ export interface ReadingPlan {
 
 export interface DailyReading {
   day: number;
-  date: string;
+  date: string; // YYYY-MM-DD format
   readings: ReadingAssignment[];
   theme?: string;
   reflection?: string;
@@ -148,6 +40,7 @@ export interface ReadingProgress {
   completionDate?: string;
 }
 
+// God's Promises Types
 export interface PromiseCategory {
   id: string;
   name: string;
@@ -177,6 +70,7 @@ export interface PromiseVerse {
   verse: number;
 }
 
+// Bag of Life Types
 export interface BagItem {
   id: string;
   type: 'prayer' | 'reflection' | 'note' | 'answer';
@@ -217,6 +111,7 @@ export interface AnswerToPrayer extends BagItem {
   testimony: string;
 }
 
+// Bible Dictionary Types
 export interface DictionaryEntry {
   id: string;
   term: string;
@@ -238,4 +133,43 @@ export interface DictionaryVerse {
   chapter: number;
   verse: number;
   context?: string;
+}
+
+// UI State Types
+export interface SpiritualGrowthState {
+  activeTab: 'reader' | 'plans' | 'promises' | 'bag' | 'dictionary';
+  selectedPlan?: string;
+  selectedCategory?: string;
+  searchQuery: string;
+  filterOptions: {
+    category?: string;
+    dateRange?: { start: string; end: string };
+    status?: string;
+  };
+}
+
+// Notification Types
+export interface SpiritualReminder {
+  id: string;
+  type: 'daily-reading' | 'prayer-reminder' | 'promise-claim' | 'reflection';
+  title: string;
+  message: string;
+  scheduledTime: string; // HH:MM format
+  isEnabled: boolean;
+  lastSent?: string;
+}
+
+// Statistics Types
+export interface SpiritualStats {
+  readingStreak: number;
+  totalVersesRead: number;
+  promisesClaimed: number;
+  prayersAnswered: number;
+  reflectionsWritten: number;
+  dictionaryTermsLearned: number;
+  currentPlan?: {
+    name: string;
+    progress: number;
+    daysRemaining: number;
+  };
 }

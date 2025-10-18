@@ -7,9 +7,13 @@ export * from './components/ThemeToggle';
 export * from './components/BibleReader';
 export * from './components/MobileBibleReader';
 export * from './components/BookmarkManager';
-export * from './components/ReadingProgress';
+export { ReadingProgress as ReadingProgressComponent } from './components/ReadingProgress';
 export * from './components/EnhancedBibleReader';
 export * from './components/EnhancedBookmarkManager';
+export * from './components/ReadingPlanCard';
+export * from './components/PromiseCard';
+export * from './components/BagItemCard';
+export * from './components/DictionaryEntryCard';
 
 // Re-export types
 export * from './types';

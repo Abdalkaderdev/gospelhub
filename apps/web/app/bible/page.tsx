@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Layout, BibleReader, BookmarkManager, ReadingProgress, Verse } from '@gospelhub/ui';
-import { WebStorageAdapter, StorageManager, BookmarkManager as CoreBookmarkManager, ReadingProgressManager } from '@gospelhub/core';
+import { Layout, BibleReader, BookmarkManager, ReadingProgressComponent as ReadingProgress, Verse } from '@gospelhub/ui';
+import { WebStorageAdapter, StorageManager, BookmarkManager as CoreBookmarkManager } from '@gospelhub/core';
 
 export default function BiblePage() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
@@ -11,28 +11,25 @@ export default function BiblePage() {
   const [currentChapter, setCurrentChapter] = useState(1);
   const [totalChapters, setTotalChapters] = useState(50);
   const [bookmarkManager, setBookmarkManager] = useState<CoreBookmarkManager | null>(null);
-  const [readingProgressManager, setReadingProgressManager] = useState<ReadingProgressManager | null>(null);
+  // const [readingProgressManager, setReadingProgressManager] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'reader' | 'bookmarks' | 'progress'>('reader');
 
   // Initialize storage and managers
   useEffect(() => {
     const storage = new StorageManager(new WebStorageAdapter());
     const bookmarkMgr = new CoreBookmarkManager(storage);
-    const progressMgr = new ReadingProgressManager(storage);
-    
     setBookmarkManager(bookmarkMgr);
-    setReadingProgressManager(progressMgr);
     
     // Load existing bookmarks
     bookmarkMgr.getBookmarkReferences().then(setBookmarks);
     
     // Load current reading position
-    progressMgr.getCurrentPosition().then(position => {
-      if (position) {
-        setCurrentBook(position.book);
-        setCurrentChapter(position.chapter);
-      }
-    });
+    // progressMgr.getCurrentPosition().then(position => {
+    //   if (position) {
+    //     setCurrentBook(position.book);
+    //     setCurrentChapter(position.chapter);
+    //   }
+    // });
   }, []);
 
   // Load total chapters for current book
@@ -69,9 +66,9 @@ export default function BiblePage() {
     setCurrentBook(book);
     setCurrentChapter(chapter);
     
-    if (readingProgressManager) {
-      await readingProgressManager.updateProgress(book, chapter);
-    }
+    // if (readingProgressManager) {
+    //   await readingProgressManager.updateProgress(book, chapter);
+    // }
   };
 
   const handleRemoveBookmark = async (verseReference: string) => {

@@ -165,4 +165,68 @@ export class StorageManager {
   async setTheme(theme: string): Promise<void> {
     await this.updateSettings({ theme });
   }
+
+  // Reading plan progress methods
+  async saveReadingProgress(progress: any): Promise<void> {
+    const allProgress = await this.getReadingPlanProgress();
+    allProgress[progress.planId] = progress;
+    await this.adapter.setItem('reading-plan-progress', JSON.stringify(allProgress));
+  }
+
+  async getReadingPlanProgress(): Promise<Record<string, any>> {
+    try {
+      const data = await this.adapter.getItem('reading-plan-progress');
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async deleteReadingProgress(planId: string): Promise<void> {
+    const allProgress = await this.getReadingPlanProgress();
+    delete allProgress[planId];
+    await this.adapter.setItem('reading-plan-progress', JSON.stringify(allProgress));
+  }
+
+  // Promise data methods
+  async savePromiseData(data: any): Promise<void> {
+    await this.adapter.setItem('promise-data', JSON.stringify(data));
+  }
+
+  async getPromiseData(): Promise<any> {
+    try {
+      const data = await this.adapter.getItem('promise-data');
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  // Bag items methods
+  async saveBagItems(items: any[]): Promise<void> {
+    await this.adapter.setItem('bag-items', JSON.stringify(items));
+  }
+
+  async getBagItems(): Promise<any[]> {
+    try {
+      const data = await this.adapter.getItem('bag-items');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Dictionary data methods
+  async saveDictionaryData(data: any): Promise<void> {
+    await this.adapter.setItem('dictionary-data', JSON.stringify(data));
+  }
+
+  async getDictionaryData(): Promise<any> {
+    try {
+      const data = await this.adapter.getItem('dictionary-data');
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  }
 }

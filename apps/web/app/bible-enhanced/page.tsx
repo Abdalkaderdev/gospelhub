@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Layout, EnhancedBibleReader, EnhancedBookmarkManager, ReadingProgress } from '@gospelhub/ui';
+import { Layout, EnhancedBibleReader, EnhancedBookmarkManager, ReadingProgressComponent as ReadingProgress } from '@gospelhub/ui';
 import { useBible, useBibleNavigation, useBookmarks } from '@gospelhub/core';
 
 export default function EnhancedBiblePage() {
