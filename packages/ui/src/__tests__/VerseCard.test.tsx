@@ -12,12 +12,10 @@ const mockVerse = {
 };
 
 const mockOnBookmark = jest.fn();
-const mockIsBookmarked = jest.fn();
 
 describe('VerseCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsBookmarked.mockReturnValue(false);
   });
 
   it('renders verse text and reference', () => {
@@ -25,7 +23,7 @@ describe('VerseCard', () => {
       <VerseCard
         verse={mockVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={false}
       />
     );
 
@@ -38,7 +36,7 @@ describe('VerseCard', () => {
       <VerseCard
         verse={mockVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={false}
       />
     );
 
@@ -50,7 +48,7 @@ describe('VerseCard', () => {
       <VerseCard
         verse={mockVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={false}
       />
     );
 
@@ -63,13 +61,11 @@ describe('VerseCard', () => {
   });
 
   it('shows bookmarked state when verse is bookmarked', () => {
-    mockIsBookmarked.mockReturnValue(true);
-
     render(
       <VerseCard
         verse={mockVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={true}
       />
     );
 
@@ -83,7 +79,7 @@ describe('VerseCard', () => {
       <VerseCard
         verse={mockVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={false}
         className={customClass}
       />
     );
@@ -102,7 +98,7 @@ describe('VerseCard', () => {
       <VerseCard
         verse={longVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={false}
       />
     );
 
@@ -114,7 +110,7 @@ describe('VerseCard', () => {
       <VerseCard
         verse={mockVerse}
         onBookmark={mockOnBookmark}
-        isBookmarked={mockIsBookmarked}
+        isBookmarked={false}
       />
     );
 
