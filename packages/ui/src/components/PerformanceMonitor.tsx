@@ -34,12 +34,13 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          console.log('FID:', entry.processingStart - entry.startTime);
+          const fidEntry = entry as any; // First Input Delay entry
+          console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
           // Send to analytics
-          if (window.gtag) {
-            window.gtag('event', 'web_vitals', {
+          if ((window as any).gtag) {
+            (window as any).gtag('event', 'web_vitals', {
               name: 'FID',
-              value: Math.round(entry.processingStart - entry.startTime),
+              value: Math.round(fidEntry.processingStart - fidEntry.startTime),
             });
           }
         });
@@ -51,8 +52,9 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       const clsObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
+          const clsEntry = entry as any; // Layout Shift entry
+          if (!clsEntry.hadRecentInput) {
+            clsValue += clsEntry.value;
           }
         });
         
