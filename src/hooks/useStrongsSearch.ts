@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
-import strongsHebrew from '../data/strongsHebrew.json';
-import strongsGreek from '../data/strongsGreek.json';
+import strongsHebrew from '../data/strongsHebrew';
+import strongsGreek from '../data/strongsGreek';
 
 interface StrongsEntry {
   strongs: string;

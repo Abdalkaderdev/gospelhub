@@ -1,5 +1,6 @@
 import React from 'react';
-import { TranslationComparison, TextDifference } from '../../types/bible-enhanced';
+import { TranslationComparison, TextDifference, BibleReference } from '../../types/bible-enhanced';
+import { BibleTranslation } from '../../types';
 
 interface TranslationComparisonProps {
   comparison: TranslationComparison;
@@ -148,4 +149,23 @@ export const TranslationComparisonView: React.FC<TranslationComparisonProps> = (
       )}
     </div>
   );
+};
+
+export const generateTranslationComparison = (
+  reference: BibleReference,
+  translations: BibleTranslation[]
+): TranslationComparison => {
+  // This is a simplified implementation
+  // In a real app, you'd implement proper text comparison algorithms
+  const translationData = translations.map(translation => ({
+    id: translation.id,
+    name: translation.name,
+    text: `Sample text for ${translation.name}`, // Replace with actual verse lookup
+    differences: [] as TextDifference[]
+  }));
+
+  return {
+    reference,
+    translations: translationData
+  };
 };

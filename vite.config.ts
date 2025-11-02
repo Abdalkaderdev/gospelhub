@@ -32,7 +32,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'bible-data': ['./src/data/processed/index.json']
+          'bible-data': ['./src/data/processed/index']
         }
       }
     }

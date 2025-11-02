@@ -14,7 +14,7 @@ class OptimizedBibleService {
 
   async initialize() {
     try {
-      const indexModule = await import('../data/processed/index.json');
+      const indexModule = await import('../data/processed/index');
       this.availableTranslations = indexModule.default;
     } catch (error) {
       console.warn('Processed translations not found, falling back to XML');
@@ -27,7 +27,9 @@ class OptimizedBibleService {
     }
 
     try {
-      const translationModule = await import(`../data/processed/${translationId}.json`);
+      // For now, return null since we don't have processed translations as TS files
+      // const translationModule = await import(`../data/processed/${translationId}.json`);
+      return null;
       const translation = translationModule.default;
       this.cache.set(translationId, translation);
       return translation;

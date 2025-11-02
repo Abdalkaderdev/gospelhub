@@ -2,8 +2,8 @@ import React, { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getStrongsNumber, isHebrewStrongs } from '../../data/wordMappings';
-import strongsHebrew from '../../data/strongsHebrew.json';
-import strongsGreek from '../../data/strongsGreek.json';
+import strongsHebrew from '../../data/strongsHebrew';
+import strongsGreek from '../../data/strongsGreek';
 
 interface StrongsEntry {
   strongs: string;

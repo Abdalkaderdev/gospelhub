@@ -14,6 +14,10 @@ export function getTranslationById(id: string): BibleTranslation | undefined {
   return bibleTranslations.find((translation) => translation.id === id);
 }
 
+export function getBibleTranslations(): BibleTranslation[] {
+  return bibleTranslations;
+}
+
 export const defaultTranslationId = "kjv";
 
 // Async functions for JSON loading (future use)

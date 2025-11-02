@@ -1,0 +1,182 @@
+export default [
+  {
+    id: "eng-kjv",
+    name: "King James Version",
+    abbreviation: "KJV",
+    language: "English"
+  },
+  {
+    id: "eng-asv",
+    name: "American Standard Version",
+    abbreviation: "ASV",
+    language: "English"
+  },
+  {
+    id: "eng-ylt",
+    name: "Young's Literal Translation",
+    abbreviation: "YLT",
+    language: "English"
+  },
+  {
+    id: "grc",
+    name: "Greek New Testament",
+    abbreviation: "GRC",
+    language: "Greek"
+  },
+  {
+    id: "hbo",
+    name: "Hebrew Old Testament",
+    abbreviation: "HEB",
+    language: "Hebrew"
+  },
+  {
+    id: "eng-esv",
+    name: "English Standard Version",
+    abbreviation: "ESV",
+    language: "English"
+  },
+  {
+    id: "eng-niv",
+    name: "New International Version",
+    abbreviation: "NIV",
+    language: "English"
+  },
+  {
+    id: "eng-nlt",
+    name: "New Living Translation",
+    abbreviation: "NLT",
+    language: "English"
+  },
+  {
+    id: "spa-rv60",
+    name: "Reina-Valera 1960",
+    abbreviation: "RV60",
+    language: "Spanish"
+  },
+  {
+    id: "spa-nvi",
+    name: "Nueva Versión Internacional",
+    abbreviation: "NVI",
+    language: "Spanish"
+  },
+  {
+    id: "ara-svd",
+    name: "Smith-Van Dyke Arabic Bible",
+    abbreviation: "SVD",
+    language: "Arabic"
+  },
+  {
+    id: "ara-vd",
+    name: "Van Dyke Arabic Bible",
+    abbreviation: "VD",
+    language: "Arabic"
+  },
+  {
+    id: "fra-lsg",
+    name: "Louis Segond 1910",
+    abbreviation: "LSG",
+    language: "French"
+  },
+  {
+    id: "fra-ost",
+    name: "French Ostervald",
+    abbreviation: "OST",
+    language: "French"
+  },
+  {
+    id: "deu-luther",
+    name: "Luther Bible",
+    abbreviation: "LUT",
+    language: "German"
+  },
+  {
+    id: "deu-schlachter",
+    name: "Schlachter 2000",
+    abbreviation: "SCH",
+    language: "German"
+  },
+  {
+    id: "nld-stv",
+    name: "Statenvertaling",
+    abbreviation: "STV",
+    language: "Dutch"
+  },
+  {
+    id: "nld-nbv",
+    name: "Nieuwe Bijbelvertaling",
+    abbreviation: "NBV",
+    language: "Dutch"
+  },
+  {
+    id: "kur-cbd",
+    name: "Kurdish Bible",
+    abbreviation: "KUR",
+    language: "Kurdish"
+  },
+  {
+    id: "eng-nasb",
+    name: "New American Standard Bible",
+    abbreviation: "NASB",
+    language: "English"
+  },
+  {
+    id: "eng-net",
+    name: "New English Translation",
+    abbreviation: "NET",
+    language: "English"
+  },
+  {
+    id: "eng-nkjv",
+    name: "New King James Version",
+    abbreviation: "NKJV",
+    language: "English"
+  },
+  {
+    id: "spa-lbla",
+    name: "La Biblia de las Américas",
+    abbreviation: "LBLA",
+    language: "Spanish"
+  },
+  {
+    id: "spa-nbla",
+    name: "Nueva Biblia de las Américas",
+    abbreviation: "NBLA",
+    language: "Spanish"
+  },
+  {
+    id: "ara-2018",
+    name: "Arabic Bible 2018",
+    abbreviation: "AR18",
+    language: "Arabic"
+  },
+  {
+    id: "fra-s21",
+    name: "Segond 21",
+    abbreviation: "S21",
+    language: "French"
+  },
+  {
+    id: "deu-hfa",
+    name: "Hoffnung für Alle",
+    abbreviation: "HFA",
+    language: "German"
+  },
+  {
+    id: "nld-2007",
+    name: "Dutch Bible 2007",
+    abbreviation: "NL07",
+    language: "Dutch"
+  },
+  {
+    id: "grc-sbl",
+    name: "SBL Greek New Testament",
+    abbreviation: "SBLGNT",
+    language: "Greek"
+  },
+  {
+    id: "hbo-lc",
+    name: "Leningrad Codex",
+    abbreviation: "LC",
+    language: "Hebrew"
+  }
+];

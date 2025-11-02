@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
-import strongsGreek from '../data/strongsGreek.json';
-import strongsHebrew from '../data/strongsHebrew.json';
+import strongsGreek from '../data/strongsGreek';
+import strongsHebrew from '../data/strongsHebrew';
 
 interface StrongsData {
   strongs: string;
