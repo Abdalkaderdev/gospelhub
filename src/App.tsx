@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, useRef } from "react";
+import { Fragment, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
 import { bibleTranslations, getTranslationById, defaultTranslationId } from "./data";
 import { BibleReference, AppState, NavigationDirection, BibleVerse } from "./types";
@@ -6,16 +6,36 @@ import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
 import { SearchService } from "./search";
 
-import { ThemeBuilder } from "./components/ThemeBuilder";
-import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
-import { ParallelView } from "./components/study/ParallelView";
-import { WordStudy } from "./components/study/WordStudy";
-import { Commentary } from "./components/study/Commentary";
-import { CrossReferences } from "./components/study/CrossReferences";
-import { BookIntroduction } from "./components/study/BookIntroduction";
-import { themeManager } from "./themes";
+import { 
+  LazyAnalyticsDashboard,
+  LazyParallelView,
+  LazyWordStudy,
+  LazyCommentary,
+  LazyCrossReferences,
+  LazyBookIntroduction
+} from "./components/lazy/LazyComponents";
+import { LazyWrapper } from "./components/lazy/LazyWrapper";
+import { PageTransition } from "./components/PageTransition";
+import { FloatingActionButton } from "./components/FloatingActionButton";
+import { VerseList } from "./components/VerseList";
+import { SwipeNavigation } from "./components/SwipeNavigation";
+import { PullToRefresh } from "./components/PullToRefresh";
+import { CrossLoader } from "./components/CrossLoader";
+import { CrossAssembly } from "./components/CrossAssembly";
+import { ReadingProgressBar } from "./components/ReadingProgressBar";
+import { useReadingProgress } from "./hooks/useReadingProgress";
+import { AdvancedSearch } from "./components/AdvancedSearch";
+import { LazyReadingPlanView, LazyThemeSwitcher, LazyOfflineManager } from "./components/lazy/LazyComponents";
+import { useTheme } from "./contexts/ThemeContext";
+import { InstallPrompt } from "./components/InstallPrompt";
+import { VirtualizedVerseList } from "./components/optimized/VirtualizedVerseList";
+import { usePWA } from "./hooks/usePWA";
+import { offlineSyncManager } from "./utils/offlineSync";
+import { triggerHaptic, isMobileDevice } from "./utils/haptics";
 import { analyticsManager } from "./analytics";
 import { performanceManager } from "./performance";
+import { updateMetaTags, generateVerseShareData, generateStructuredData } from "./utils/seo";
+import { announceToScreenReader, KEYBOARD_KEYS } from "./utils/accessibility";
 
 const App = () => {
   const [selectedTranslationId, setSelectedTranslationId] = useState(defaultTranslationId);
@@ -32,9 +52,15 @@ const App = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showStudyTools, setShowStudyTools] = useState(false);
   const [showBookIntro, setShowBookIntro] = useState(false);
+  const [showReadingPlan, setShowReadingPlan] = useState(false);
+  const [showOfflineManager, setShowOfflineManager] = useState(false);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [parallelConfig, setParallelConfig] = useState({ translations: [selectedTranslationId], syncScroll: true, highlightDifferences: false });
-  const [currentTheme, setCurrentTheme] = useState(themeManager.getCurrentTheme());
+  const [keyboardNavigation, setKeyboardNavigation] = useState(false);
+  const [showThemeSwitcher, setShowThemeSwitcher] = useState(false);
+  const { currentTheme } = useTheme();
+  const { isOnline } = usePWA();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const selectedTranslation = useMemo(
     () => getTranslationById(selectedTranslationId) || bibleTranslations[0],
@@ -52,18 +78,50 @@ const App = () => {
     }
   }, [selectedTranslation, firstBook, appState.currentBook]);
 
-  useEffect(() => {
-    const unsubscribe = themeManager.subscribe(setCurrentTheme);
-    return unsubscribe;
-  }, []);
+
 
   useEffect(() => {
     if (appState.currentBook && appState.currentChapter) {
       analyticsManager.startSession(appState.currentBook, appState.currentChapter, selectedTranslationId);
       performanceManager.preloadNextChapters(appState.currentBook, appState.currentChapter, selectedTranslationId);
+      
+      // Cache chapter for offline reading
+      const chapterData = selectedTranslation.data[appState.currentBook]?.verses[appState.currentChapter];
+      if (chapterData) {
+        offlineSyncManager.cacheChapter(appState.currentBook, appState.currentChapter, chapterData);
+      }
+      
+      // Update SEO meta tags
+      const title = `${appState.currentBook} ${appState.currentChapter} - GospelHub`;
+      const description = `Read ${appState.currentBook} chapter ${appState.currentChapter} in the ${selectedTranslation.name} translation`;
+      const url = `https://gospelhub.space/${encodeURIComponent(appState.currentBook)}/${appState.currentChapter}`;
+      updateMetaTags(title, description, url);
     }
     return () => analyticsManager.endSession();
-  }, [appState.currentBook, appState.currentChapter, selectedTranslationId]);
+  }, [appState.currentBook, appState.currentChapter, selectedTranslationId, selectedTranslation.name]);
+
+  // Keyboard navigation detection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === KEYBOARD_KEYS.TAB) {
+        setKeyboardNavigation(true);
+        document.body.classList.add('keyboard-nav');
+      }
+    };
+
+    const handleMouseDown = () => {
+      setKeyboardNavigation(false);
+      document.body.classList.remove('keyboard-nav');
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleMouseDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, []);
 
   const chapterOptions = useMemo(() => {
     if (!appState.currentBook) {
@@ -79,7 +137,7 @@ const App = () => {
     return selectedTranslation.data[appState.currentBook]?.verses[appState.currentChapter] ?? [];
   }, [appState, selectedTranslation]);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -94,22 +152,76 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchService]);
 
-  const handleNavigate = (direction: "prev" | "next") => {
+  const handleNavigate = useCallback((direction: "prev" | "next") => {
     const availableBooks = Object.keys(selectedTranslation.data);
     const navDirection = direction === "next" ? NavigationDirection.Next : NavigationDirection.Previous;
     const newState = navigateChapter(appState, navDirection, availableBooks);
+    
+    // Trigger haptic feedback on mobile
+    if (isMobileDevice()) {
+      triggerHaptic('light');
+    }
+    
     setAppState(newState);
-  };
+    announceToScreenReader(`Navigated to ${newState.currentBook} chapter ${newState.currentChapter}`);
+  }, [selectedTranslation.data, appState]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsLoading(true);
+    // Simulate refresh delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Refresh current chapter data
+    if (appState.currentBook && appState.currentChapter) {
+      performanceManager.preloadNextChapters(appState.currentBook, appState.currentChapter, selectedTranslationId);
+    }
+    
+    setIsLoading(false);
+    announceToScreenReader('Content refreshed');
+  }, [appState.currentBook, appState.currentChapter, selectedTranslationId]);
 
   const displayVerses = searchTerm.trim() ? searchResults : currentVerses;
+  
+  // Get combined text for progress tracking
+  const combinedText = useMemo(() => {
+    return displayVerses.map(item => {
+      if ("verse" in item) {
+        return item.text;
+      } else {
+        return item.verse?.text || '';
+      }
+    }).join(' ');
+  }, [displayVerses]);
+  
+  const progressData = useReadingProgress(scrollContainerRef, combinedText);
 
   return (
-    <main className="min-h-screen theme-transition px-4 sm:px-6 py-8 sm:py-16" style={{
-      background: `linear-gradient(135deg, ${currentTheme.colors.background} 0%, ${currentTheme.colors.surface} 100%)`,
-      color: currentTheme.colors.text
-    }}>
+    <>
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <main 
+        id="main-content"
+        className="min-h-screen theme-transition theme-background" 
+        style={{
+          background: `linear-gradient(135deg, ${currentTheme.colors.background} 0%, ${currentTheme.colors.surface} 100%)`
+        }}
+        role="main"
+        aria-label="Bible reader application"
+      >
+        {displayVerses.length > 0 && !searchTerm.trim() && (
+          <ReadingProgressBar 
+            progress={progressData.progress}
+            estimatedTime={progressData.estimatedReadingTime}
+            wordsRead={progressData.wordsRead}
+            totalWords={progressData.totalWords}
+            currentTheme={currentTheme}
+          />
+        )}
+        
+        <div className="px-4 sm:px-6 py-8 sm:py-16">
       <div className="mx-auto max-w-7xl">
         <motion.header
           className="mb-8 sm:mb-16 text-left"
@@ -126,8 +238,8 @@ const App = () => {
           <div className="flex flex-wrap gap-3">
 
             <button
-              onClick={() => setShowThemeBuilder(true)}
-              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              onClick={() => setShowThemeSwitcher(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm theme-transition"
               style={{ 
                 borderColor: currentTheme.colors.border,
                 backgroundColor: currentTheme.colors.surface,
@@ -168,6 +280,28 @@ const App = () => {
               }}
             >
               📖 Book Intro
+            </button>
+            <button
+              onClick={() => setShowReadingPlan(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              📅 Reading Plan
+            </button>
+            <button
+              onClick={() => setShowOfflineManager(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              {isOnline ? '💾' : '📱'} Offline
             </button>
           </div>
         </motion.header>
@@ -236,22 +370,18 @@ const App = () => {
                     </select>
                   </label>
 
-                  <label className="block">
-                    <span className="mb-2 block text-xs sm:text-sm font-medium text-stone-600">Search</span>
-                    <input
-                      type="search"
-                      placeholder='Try "light"'
-                      value={searchTerm}
-                      onChange={(event) => {
-                        const query = event.target.value;
-                        setSearchTerm(query);
-                        if (query.trim()) {
-                          handleSearch(query);
-                        }
+                  <div>
+                    <span className="mb-2 block text-xs sm:text-sm font-medium" style={{ color: currentTheme.colors.textSecondary }}>Advanced Search</span>
+                    <AdvancedSearch 
+                      searchService={searchService}
+                      currentTheme={currentTheme}
+                      onResultClick={(book, chapter, verse) => {
+                        setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
+                        setSearchTerm('');
+                        setSearchResults([]);
                       }}
-                      className="w-full rounded-xl border border-stone-200 bg-white px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base text-stone-900 shadow-sm transition-all hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
                     />
-                  </label>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -272,29 +402,35 @@ const App = () => {
                   <h3 className="text-xl font-light mb-4" style={{ color: currentTheme.colors.text }}>Study Tools</h3>
                   
                   <div className="space-y-6">
-                    <ParallelView
-                      book={appState.currentBook}
-                      chapter={appState.currentChapter}
-                      config={parallelConfig}
-                      onConfigChange={setParallelConfig}
-                    />
+                    <LazyWrapper>
+                      <LazyParallelView
+                        book={appState.currentBook}
+                        chapter={appState.currentChapter}
+                        config={parallelConfig}
+                        onConfigChange={setParallelConfig}
+                      />
+                    </LazyWrapper>
                     
                     {appState.currentVerse !== "all" && typeof appState.currentVerse === "number" && (
                       <>
-                        <Commentary
-                          book={appState.currentBook}
-                          chapter={appState.currentChapter}
-                          verse={appState.currentVerse}
-                        />
+                        <LazyWrapper>
+                          <LazyCommentary
+                            book={appState.currentBook}
+                            chapter={appState.currentChapter}
+                            verse={appState.currentVerse}
+                          />
+                        </LazyWrapper>
                         
-                        <CrossReferences
-                          book={appState.currentBook}
-                          chapter={appState.currentChapter}
-                          verse={appState.currentVerse}
-                          onReferenceClick={(book, chapter, verse) => {
-                            setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
-                          }}
-                        />
+                        <LazyWrapper>
+                          <LazyCrossReferences
+                            book={appState.currentBook}
+                            chapter={appState.currentChapter}
+                            verse={appState.currentVerse}
+                            onReferenceClick={(book, chapter, verse) => {
+                              setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
+                            }}
+                          />
+                        </LazyWrapper>
                       </>
                     )}
                   </div>
@@ -304,91 +440,169 @@ const App = () => {
           )}
 
           <section className={showStudyTools ? "lg:col-span-4" : "lg:col-span-7"}>
-            <motion.div
-              className="rounded-2xl sm:rounded-3xl border border-stone-200/60 bg-white/80 p-6 sm:p-8 shadow-lg backdrop-blur-sm"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <div className="mb-4 sm:mb-6 flex items-start justify-between gap-4">
-                <h2 className="text-2xl sm:text-3xl font-light text-stone-900">
-                  {searchTerm.trim() ? `Results for "${searchTerm.trim()}"` : `${appState.currentBook} ${appState.currentChapter}`}
-                </h2>
-              </div>
+            <PullToRefresh onRefresh={handleRefresh}>
+              <SwipeNavigation 
+                onSwipeLeft={() => handleNavigate('next')}
+                onSwipeRight={() => handleNavigate('prev')}
+                disabled={isLoading}
+              >
+                <PageTransition pageKey={`${appState.currentBook}-${appState.currentChapter}`}>
+                  <motion.div
+                    className="rounded-2xl sm:rounded-3xl border p-6 sm:p-8 shadow-lg backdrop-blur-sm theme-transition"
+                    style={{
+                      borderColor: currentTheme.colors.border,
+                      backgroundColor: currentTheme.colors.surface + 'CC'
+                    }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                  >
+                <div className="mb-4 sm:mb-6 flex items-start justify-between gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-light" style={{ color: currentTheme.colors.text }}>
+                    {searchTerm.trim() ? `Results for "${searchTerm.trim()}"` : `${appState.currentBook} ${appState.currentChapter}`}
+                  </h2>
+                </div>
 
-              <div className="max-h-[60vh] overflow-y-auto space-y-3 sm:space-y-4">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <p className="text-stone-500">Loading...</p>
+                <div 
+                  ref={scrollContainerRef}
+                  className="max-h-[60vh] overflow-y-auto scroll-container"
+                >
+                  {isLoading ? (
+                    <motion.div 
+                      className="flex items-center justify-center py-8"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CrossAssembly 
+                        size={48}
+                        color={currentTheme.colors.primary}
+                        thickness={6}
+                      />
+                    </motion.div>
+                  ) : displayVerses.length === 0 ? (
+                    <motion.div 
+                      className="flex flex-col items-center justify-center py-8 space-y-4"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <CrossLoader 
+                        size={32}
+                        color={currentTheme.colors.textSecondary}
+                        duration={2}
+                      />
+                      <p style={{ color: currentTheme.colors.textSecondary }}>No verses found</p>
+                    </motion.div>
+                  ) : (
+                    <VirtualizedVerseList
+                      verses={displayVerses.map(item => {
+                        if ("verse" in item) {
+                          return {
+                            book: item.book || '',
+                            chapter: item.chapter || 0,
+                            verse: item.verse,
+                            text: item.text
+                          };
+                        } else {
+                          return item.verse;
+                        }
+                      })}
+                      onVerseClick={(verse) => {
+                        setSelectedWord(verse.text.split(' ')[0]);
+                        announceToScreenReader(`Selected verse ${verse.verse}`);
+                      }}
+                      height={400}
+                    />
+                  )}
                   </div>
-                ) : displayVerses.length === 0 ? (
-                  <div className="flex items-center justify-center py-8">
-                    <p className="text-stone-500">No verses found</p>
-                  </div>
-                ) : (
-                  <AnimatePresence mode="wait">
-                    {displayVerses.map((item, index) => {
-                      const verse = "verse" in item ? item.verse : item.verse;
-                      const text = "verse" in item ? item.text : item.verse.text;
-
-                      return (
-                        <motion.div
-                          key={`${item.book || verse.book}-${item.chapter || verse.chapter}-${verse}`}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="rounded-xl border p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
-                          style={{
-                            borderColor: currentTheme.colors.border,
-                            backgroundColor: currentTheme.colors.background
-                          }}
-                        >
-                          <span className="text-xs sm:text-sm font-medium block mb-2" style={{ color: currentTheme.colors.primary }}>
-                            {item.book || verse.book} {item.chapter || verse.chapter}:{verse}
-                          </span>
-                          <p className="text-sm sm:text-base leading-relaxed" style={{ color: currentTheme.colors.text }}>
-                            {text.split(' ').map((word: string, wordIndex: number) => (
-                              <span
-                                key={wordIndex}
-                                className="cursor-pointer hover:bg-opacity-20 hover:bg-yellow-300 rounded px-1 transition-colors"
-                                onClick={() => setSelectedWord(word.replace(/[^a-zA-Z]/g, ''))}
-                              >
-                                {word}{' '}
-                              </span>
-                            ))}
-                          </p>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                )}
-              </div>
-            </motion.div>
+                  </motion.div>
+                </PageTransition>
+              </SwipeNavigation>
+            </PullToRefresh>
           </section>
         </div>
       </div>
       
-      <ThemeBuilder 
-        isOpen={showThemeBuilder} 
-        onClose={() => setShowThemeBuilder(false)} 
-      />
+      <LazyWrapper>
+        <LazyThemeSwitcher 
+          isOpen={showThemeSwitcher} 
+          onClose={() => setShowThemeSwitcher(false)} 
+        />
+      </LazyWrapper>
       
-      <AnalyticsDashboard 
-        isOpen={showAnalytics} 
-        onClose={() => setShowAnalytics(false)} 
-      />
+      <LazyWrapper>
+        <LazyAnalyticsDashboard 
+          isOpen={showAnalytics} 
+          onClose={() => setShowAnalytics(false)} 
+        />
+      </LazyWrapper>
       
-      <WordStudy 
-        word={selectedWord} 
-        onClose={() => setSelectedWord(null)} 
-      />
+      <LazyWrapper>
+        <LazyWordStudy 
+          word={selectedWord} 
+          onClose={() => setSelectedWord(null)} 
+        />
+      </LazyWrapper>
       
-      <BookIntroduction 
-        book={appState.currentBook} 
-        isOpen={showBookIntro} 
-        onClose={() => setShowBookIntro(false)} 
+      <LazyWrapper>
+        <LazyBookIntroduction 
+          book={appState.currentBook} 
+          isOpen={showBookIntro} 
+          onClose={() => setShowBookIntro(false)} 
+        />
+      </LazyWrapper>
+      
+      <AnimatePresence>
+        {showReadingPlan && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowReadingPlan(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative">
+                <button
+                  onClick={() => setShowReadingPlan(false)}
+                  className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-colors"
+                >
+                  ✕
+                </button>
+                <LazyWrapper>
+                  <LazyReadingPlanView />
+                </LazyWrapper>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <LazyWrapper>
+        <LazyOfflineManager 
+          isOpen={showOfflineManager} 
+          onClose={() => setShowOfflineManager(false)} 
+        />
+      </LazyWrapper>
+      
+      <InstallPrompt />
+      
+      <FloatingActionButton 
+        onNavigateNext={() => handleNavigate('next')}
+        onNavigatePrev={() => handleNavigate('prev')}
+        onToggleStudyTools={() => setShowStudyTools(!showStudyTools)}
+        onShowAnalytics={() => setShowAnalytics(true)}
       />
-    </main>
+        </div>
+      </main>
+    </>
   );
 };
 

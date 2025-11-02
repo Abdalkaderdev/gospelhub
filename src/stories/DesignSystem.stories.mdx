@@ -1,0 +1,115 @@
+import { Meta } from '@storybook/blocks';
+import { designTheme } from '../design-system/theme';
+
+<Meta title="Design System/Overview" />
+
+# GospelHub Design System
+
+A comprehensive design system built with TypeScript and styled-components for the GospelHub Bible reader application.
+
+## Philosophy
+
+Our design system is built around the principles of:
+- **Consistency**: Unified visual language across all components
+- **Flexibility**: Compound components that can be composed in multiple ways
+- **Accessibility**: WCAG compliant components with proper semantic markup
+- **Performance**: Optimized animations and efficient rendering
+
+## Theme Structure
+
+### Colors
+Our color palette is inspired by warm, earthy tones that create a peaceful reading environment:
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', margin: '2rem 0' }}>
+  {Object.entries(designTheme.colors).map(([name, color]) => (
+    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ 
+        width: '40px', 
+        height: '40px', 
+        backgroundColor: color, 
+        borderRadius: '8px',
+        border: '1px solid #e7e5e4'
+      }} />
+      <div>
+        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{name}</div>
+        <div style={{ fontSize: '0.75rem', color: '#78716c' }}>{color}</div>
+      </div>
+    </div>
+  ))}
+</div>
+
+### Typography
+We use system fonts for optimal performance and readability:
+
+<div style={{ margin: '2rem 0' }}>
+  <div style={{ fontSize: designTheme.typography.fontSize['3xl'], fontWeight: designTheme.typography.fontWeight.semibold, marginBottom: '1rem' }}>
+    Heading 1 - 3xl/Semibold
+  </div>
+  <div style={{ fontSize: designTheme.typography.fontSize['2xl'], fontWeight: designTheme.typography.fontWeight.semibold, marginBottom: '1rem' }}>
+    Heading 2 - 2xl/Semibold
+  </div>
+  <div style={{ fontSize: designTheme.typography.fontSize.xl, fontWeight: designTheme.typography.fontWeight.medium, marginBottom: '1rem' }}>
+    Heading 3 - xl/Medium
+  </div>
+  <div style={{ fontSize: designTheme.typography.fontSize.base, fontWeight: designTheme.typography.fontWeight.normal, marginBottom: '1rem' }}>
+    Body Text - base/Normal
+  </div>
+  <div style={{ fontSize: designTheme.typography.fontSize.sm, fontWeight: designTheme.typography.fontWeight.normal, color: designTheme.colors.textSecondary }}>
+    Caption Text - sm/Normal
+  </div>
+</div>
+
+### Spacing
+Consistent spacing scale based on 0.25rem (4px) increments:
+
+<div style={{ margin: '2rem 0' }}>
+  {Object.entries(designTheme.spacing).map(([name, value]) => (
+    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+      <div style={{ width: '60px', fontSize: '0.875rem', fontWeight: 600 }}>{name}</div>
+      <div style={{ width: value, height: '20px', backgroundColor: designTheme.colors.primary, borderRadius: '2px' }} />
+      <div style={{ fontSize: '0.75rem', color: designTheme.colors.textSecondary }}>{value}</div>
+    </div>
+  ))}
+</div>
+
+## Component Architecture
+
+### Compound Components
+We use the compound component pattern for maximum flexibility:
+
+```tsx
+<BibleReader verses={verses} currentBook="Genesis" currentChapter={1}>
+  <BibleReader.Header>
+    <Text variant="caption">King James Version</Text>
+  </BibleReader.Header>
+  <BibleReader.Content>
+    {verses.map((verse, index) => (
+      <BibleReader.Verse key={verse.verse} verse={verse} index={index} />
+    ))}
+  </BibleReader.Content>
+</BibleReader>
+```
+
+### Custom Hooks
+Reusable logic extracted into custom hooks:
+
+- `useBibleData` - Bible data management and search
+- `useUserPreferences` - User settings and preferences
+- `useAnimations` - Animation variants and controls
+
+## Getting Started
+
+```tsx
+import { ThemeProvider } from 'styled-components';
+import { designTheme, Button, Card } from './design-system';
+
+function App() {
+  return (
+    <ThemeProvider theme={designTheme}>
+      <Card>
+        <Button variant="primary">Get Started</Button>
+      </Card>
+    </ThemeProvider>
+  );
+}
+```

@@ -2,14 +2,22 @@ import { SearchResult, BibleSearchResult, BibleReference } from "../types";
 import { fetchBibleVerse } from "../api/bible";
 import { getTranslationById } from "../data";
 
+export interface SearchFilters {
+  testament?: 'old' | 'new' | 'all';
+  book?: string;
+  phraseMatch?: boolean;
+}
+
 export class SearchService {
   private translationId: string;
+  private oldTestamentBooks = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];
+  private newTestamentBooks = ['Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians', '2 Corinthians'];
 
   constructor(translationId: string = "kjv") {
     this.translationId = translationId;
   }
 
-  async searchBible(query: string): Promise<SearchResult<BibleSearchResult>> {
+  async searchBible(query: string, filters: SearchFilters = {}): Promise<SearchResult<BibleSearchResult>> {
     if (!query.trim()) {
       return { results: [], total: 0 };
     }
@@ -19,7 +27,19 @@ export class SearchService {
       throw new Error(`Translation ${this.translationId} not found`);
     }
 
-    const allBooks = Object.keys(translation.data);
+    let allBooks = Object.keys(translation.data);
+    
+    // Apply testament filter
+    if (filters.testament && filters.testament !== 'all') {
+      const testamentBooks = filters.testament === 'old' ? this.oldTestamentBooks : this.newTestamentBooks;
+      allBooks = allBooks.filter(book => testamentBooks.includes(book));
+    }
+    
+    // Apply book filter
+    if (filters.book) {
+      allBooks = allBooks.filter(book => book === filters.book);
+    }
+
     const results: BibleSearchResult[] = [];
 
     for (const book of allBooks) {
@@ -29,7 +49,16 @@ export class SearchService {
         const verses = bookData.verses[chapter] || [];
         
         for (const verse of verses) {
-          if (verse.text.toLowerCase().includes(query.toLowerCase())) {
+          let matches = false;
+          
+          if (filters.phraseMatch) {
+            matches = verse.text.toLowerCase().includes(query.toLowerCase());
+          } else {
+            const searchWords = query.toLowerCase().split(' ');
+            matches = searchWords.some(word => verse.text.toLowerCase().includes(word));
+          }
+          
+          if (matches) {
             results.push({
               reference: {
                 book: verse.book,
@@ -45,9 +74,13 @@ export class SearchService {
     }
 
     return {
-      results,
+      results: results.slice(0, 20),
       total: results.length,
     };
+  }
+
+  getAvailableBooks(): string[] {
+    return [...this.oldTestamentBooks, ...this.newTestamentBooks];
   }
 
   async getVerse(reference: BibleReference) {

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - GospelHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fafaf9 0%, #ffffff 100%);
+            color: #1c1917;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 3rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            color: #d97706;
+        }
+        
+        p {
+            color: #78716c;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        
+        .cached-content {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .cached-content h3 {
+            color: #166534;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .verse {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #10b981;
+        }
+        
+        .verse-ref {
+            font-weight: 600;
+            color: #059669;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .verse-text {
+            color: #064e3b;
+            line-height: 1.5;
+        }
+        
+        .retry-btn {
+            background: #d97706;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .retry-btn:hover {
+            background: #b45309;
+            transform: translateY(-1px);
+        }
+        
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .status.online {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status.offline {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📖</div>
+        <h1>You're Offline</h1>
+        <p>Don't worry! You can still read cached Bible content while offline. Your bookmarks and highlights will sync when you're back online.</p>
+        
+        <div class="cached-content">
+            <h3>📚 Available Offline Content</h3>
+            <div class="verse">
+                <div class="verse-ref">John 3:16</div>
+                <div class="verse-text">For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.</div>
+            </div>
+            <div class="verse">
+                <div class="verse-ref">Psalms 23:1</div>
+                <div class="verse-text">The Lord is my shepherd; I shall not want.</div>
+            </div>
+            <div class="verse">
+                <div class="verse-ref">Romans 8:28</div>
+                <div class="verse-text">And we know that all things work together for good to them that love God, to them who are the called according to his purpose.</div>
+            </div>
+        </div>
+        
+        <button class="retry-btn" onclick="retryConnection()">Try Again</button>
+        
+        <div id="status" class="status offline">
+            🔴 Offline - Cached content available
+        </div>
+    </div>
+
+    <script>
+        function retryConnection() {
+            if (navigator.onLine) {
+                window.location.reload();
+            } else {
+                updateStatus();
+            }
+        }
+        
+        function updateStatus() {
+            const status = document.getElementById('status');
+            if (navigator.onLine) {
+                status.textContent = '🟢 Online - Reconnected!';
+                status.className = 'status online';
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                status.textContent = '🔴 Offline - Cached content available';
+                status.className = 'status offline';
+            }
+        }
+        
+        // Listen for online/offline events
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        
+        // Check status on load
+        updateStatus();
+        
+        // Auto-retry every 30 seconds
+        setInterval(() => {
+            if (navigator.onLine) {
+                updateStatus();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

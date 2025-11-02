@@ -20,6 +20,25 @@ export interface BibleReference {
     chapter: number;
     verse: number;
     text: string;
+    words?: BibleWord[];
+  }
+
+  export interface BibleWord {
+    text: string;
+    strongsNumber?: string;
+    morphology?: string;
+    lemma?: string;
+  }
+
+  export interface BibleBook {
+    name: string;
+    abbreviation: string;
+    chapters: BibleChapter[];
+  }
+
+  export interface BibleChapter {
+    number: number;
+    verses: BibleVerse[];
   }
   
   export interface BibleChapterIndex {

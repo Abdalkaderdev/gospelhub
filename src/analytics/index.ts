@@ -115,11 +115,53 @@ export class AnalyticsManager {
       .slice(-12);
   }
 
+  getBookProgress(): { book: string; chaptersRead: number; totalChapters: number; progress: number }[] {
+    const bookData: { [book: string]: Set<number> } = {};
+    const bookTotals: { [book: string]: number } = {
+      'Genesis': 50, 'Exodus': 40, 'Matthew': 28, 'Mark': 16, 'Luke': 24, 'John': 21,
+      'Acts': 28, 'Romans': 16, '1 Corinthians': 16, '2 Corinthians': 13
+    };
+
+    this.sessions.forEach(session => {
+      if (!bookData[session.book]) {
+        bookData[session.book] = new Set();
+      }
+      bookData[session.book].add(session.chapter);
+    });
+
+    return Object.entries(bookData).map(([book, chapters]) => ({
+      book,
+      chaptersRead: chapters.size,
+      totalChapters: bookTotals[book] || 25,
+      progress: (chapters.size / (bookTotals[book] || 25)) * 100
+    })).sort((a, b) => b.progress - a.progress);
+  }
+
+  getReadingHeatmap(): { date: string; count: number }[] {
+    const heatmapData: { [date: string]: number } = {};
+    const last365Days = Array.from({ length: 365 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      return date.toISOString().split('T')[0];
+    });
+
+    this.sessions.forEach(session => {
+      const date = new Date(session.startTime).toISOString().split('T')[0];
+      heatmapData[date] = (heatmapData[date] || 0) + 1;
+    });
+
+    return last365Days.map(date => ({
+      date,
+      count: heatmapData[date] || 0
+    })).reverse();
+  }
+
   analyzeWordFrequency(text: string): WordFrequency[] {
+    const commonWords = new Set(['the', 'and', 'that', 'have', 'for', 'not', 'with', 'you', 'this', 'but', 'his', 'from', 'they', 'she', 'her', 'been', 'than', 'its', 'who', 'oil']);
     const words = text.toLowerCase()
       .replace(/[^\w\s]/g, '')
       .split(/\s+/)
-      .filter(word => word.length > 3);
+      .filter(word => word.length > 3 && !commonWords.has(word));
 
     const frequency: { [word: string]: number } = {};
     words.forEach(word => {
@@ -129,7 +171,29 @@ export class AnalyticsManager {
     return Object.entries(frequency)
       .map(([word, count]) => ({ word, count, verses: [] }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 20);
+      .slice(0, 30);
+  }
+
+  getReadingVelocity(): { period: string; versesPerMinute: number }[] {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      return date.toISOString().split('T')[0];
+    }).reverse();
+
+    return last7Days.map(date => {
+      const daySessions = this.sessions.filter(session => 
+        new Date(session.startTime).toISOString().split('T')[0] === date
+      );
+      
+      const totalVerses = daySessions.reduce((sum, session) => sum + session.versesRead.length, 0);
+      const totalMinutes = daySessions.reduce((sum, session) => sum + (session.duration / 60000), 0);
+      
+      return {
+        period: new Date(date).toLocaleDateString('en', { weekday: 'short' }),
+        versesPerMinute: totalMinutes > 0 ? totalVerses / totalMinutes : 0
+      };
+    });
   }
 
   private calculateStreak(): number {
@@ -193,3 +257,23 @@ export class AnalyticsManager {
 }
 
 export const analyticsManager = new AnalyticsManager();
+
+// Accessibility helpers
+export const announceToScreenReader = (message: string) => {
+  const announcement = document.createElement('div');
+  announcement.setAttribute('aria-live', 'polite');
+  announcement.setAttribute('aria-atomic', 'true');
+  announcement.className = 'sr-only';
+  announcement.textContent = message;
+  document.body.appendChild(announcement);
+  setTimeout(() => document.body.removeChild(announcement), 1000);
+};
+
+export const generateVerseMetaTags = (book: string, chapter: number, verse: number, text: string) => {
+  return {
+    title: `${book} ${chapter}:${verse} - GospelHub`,
+    description: text.substring(0, 160),
+    url: `https://gospelhub.space/${book}/${chapter}/${verse}`,
+    image: `https://gospelhub.space/api/verse-image/${book}/${chapter}/${verse}`
+  };
+};

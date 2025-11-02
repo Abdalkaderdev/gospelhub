@@ -5,6 +5,10 @@ import { ReadingStats } from '../types';
 import { ReadingChart } from './charts/ReadingChart';
 import { ProgressRing } from './charts/ProgressRing';
 import { WordCloud } from './charts/WordCloud';
+import { ReadingHeatmap } from './charts/ReadingHeatmap';
+import { BookProgress } from './charts/BookProgress';
+import { ReadingVelocity } from './charts/ReadingVelocity';
+import { trapFocus, announceToScreenReader, KEYBOARD_KEYS } from '../utils/accessibility';
 
 interface AnalyticsDashboardProps {
   isOpen: boolean;
@@ -15,16 +19,27 @@ export const AnalyticsDashboard = ({ isOpen, onClose }: AnalyticsDashboardProps)
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [weeklyData, setWeeklyData] = useState<{ day: string; minutes: number }[]>([]);
   const [monthlyData, setMonthlyData] = useState<{ month: string; sessions: number }[]>([]);
+  const [heatmapData, setHeatmapData] = useState<{ date: string; count: number }[]>([]);
+  const [bookProgress, setBookProgress] = useState<{ book: string; chaptersRead: number; totalChapters: number; progress: number }[]>([]);
+  const [velocityData, setVelocityData] = useState<{ period: string; versesPerMinute: number }[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       const readingStats = analyticsManager.getReadingStats();
       const weekly = analyticsManager.getWeeklyData();
       const monthly = analyticsManager.getMonthlyData();
+      const heatmap = analyticsManager.getReadingHeatmap();
+      const progress = analyticsManager.getBookProgress();
+      const velocity = analyticsManager.getReadingVelocity();
       
       setStats(readingStats);
       setWeeklyData(weekly);
       setMonthlyData(monthly);
+      setHeatmapData(heatmap);
+      setBookProgress(progress);
+      setVelocityData(velocity);
+      
+      announceToScreenReader('Reading analytics dashboard opened');
     }
   }, [isOpen]);
 
@@ -49,13 +64,16 @@ export const AnalyticsDashboard = ({ isOpen, onClose }: AnalyticsDashboardProps)
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="analytics-title"
           >
             <div className="p-6 border-b border-[var(--color-border)]">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-light text-[var(--color-text)]">Reading Analytics</h2>
+                <h2 id="analytics-title" className="text-2xl font-light text-[var(--color-text)]">Reading Analytics</h2>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
+                  className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  aria-label="Close analytics dashboard"
                 >
                   ✕
                 </button>
@@ -110,7 +128,6 @@ export const AnalyticsDashboard = ({ isOpen, onClose }: AnalyticsDashboardProps)
 
               {/* Charts Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Weekly Reading Chart */}
                 <motion.div
                   className="p-6 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)]"
                   initial={{ opacity: 0, x: -20 }}
@@ -120,7 +137,6 @@ export const AnalyticsDashboard = ({ isOpen, onClose }: AnalyticsDashboardProps)
                   <ReadingChart data={weeklyData} goal={30} />
                 </motion.div>
 
-                {/* Progress Rings */}
                 <motion.div
                   className="p-6 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)]"
                   initial={{ opacity: 0, x: 20 }}
@@ -144,6 +160,36 @@ export const AnalyticsDashboard = ({ isOpen, onClose }: AnalyticsDashboardProps)
                   </div>
                 </motion.div>
               </div>
+
+              {/* New Visualizations */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <motion.div
+                  className="p-6 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)]"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <ReadingHeatmap data={heatmapData} />
+                </motion.div>
+
+                <motion.div
+                  className="p-6 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)]"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <ReadingVelocity data={velocityData} />
+                </motion.div>
+              </div>
+
+              <motion.div
+                className="p-6 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+              >
+                <BookProgress data={bookProgress} />
+              </motion.div>
 
               {/* Monthly Activity */}
               <motion.div
@@ -184,14 +230,17 @@ export const AnalyticsDashboard = ({ isOpen, onClose }: AnalyticsDashboardProps)
                 transition={{ delay: 0.8 }}
               >
                 <h3 className="text-lg font-medium text-[var(--color-text)] mb-4">Favorite Books</h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2" role="list" aria-label="Most frequently read books">
                   {stats.favoriteBooks.map((book, index) => (
                     <motion.span
                       key={book}
-                      className="px-3 py-1 rounded-full bg-[var(--color-primary)] text-white text-sm"
+                      className="px-3 py-1 rounded-full bg-[var(--color-primary)] text-white text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]"
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.9 + index * 0.1 }}
+                      transition={{ delay: 1.0 + index * 0.1 }}
+                      role="listitem"
+                      tabIndex={0}
+                      aria-label={`${book}, rank ${index + 1}`}
                     >
                       {book}
                     </motion.span>
