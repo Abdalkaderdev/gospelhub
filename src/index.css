@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default theme colors */
+  --color-primary: #d97706;
+  --color-secondary: #92400e;
+  --color-accent: #f59e0b;
+  --color-background: #fafaf9;
+  --color-surface: #ffffff;
+  --color-text: #1c1917;
+  --color-text-secondary: #78716c;
+  --color-border: #e7e5e4;
+  
+  /* Animation settings */
+  --motion-reduce: none;
+}
+
+* {
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+[data-theme] {
+  color-scheme: light dark;
+}
+
+.theme-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blur-up {
+  filter: blur(5px);
+  transition: filter 0.3s ease;
+}
+
+.blur-up.loaded {
+  filter: blur(0);
+}
+
+.infinite-scroll {
+  scroll-behavior: smooth;
+}
+
+.word-highlight {
+  background: linear-gradient(120deg, var(--color-accent) 0%, var(--color-accent) 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 0.2em;
+  background-position: 0 88%;
+  transition: background-size 0.25s ease-in;
+}
+
+.word-highlight:hover {
+  background-size: 100% 88%;
+}
