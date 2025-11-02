@@ -122,14 +122,14 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
     
     if (!versionData) {
       return (
-        <div key={key} style={style} className="p-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div key={key} style={{...style, borderColor: 'var(--color-border)'}} className="p-3 border-b">
           <div className="text-gray-400 text-sm">Verse {comparison?.verseNumber}</div>
         </div>
       );
     }
     
     return (
-      <div key={key} style={style} className="p-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+      <div key={key} style={{...style, borderColor: 'var(--color-border)'}} className="p-3 border-b">
         <div className="flex items-start gap-3">
           <span className="font-medium text-sm min-w-[2rem] mt-1" style={{ color: 'var(--color-primary)' }}>
             {comparison.verseNumber}

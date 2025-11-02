@@ -133,10 +133,9 @@ export const CrossAssembly = ({
             borderRadius: '50%'
           }}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate="pulse"
           transition={{ delay: 1.4 }}
           variants={pulseVariants}
-          animate="pulse"
         />
       </motion.div>
     </div>

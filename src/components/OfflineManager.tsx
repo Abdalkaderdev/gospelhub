@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Trash2, Wifi, Database, BookOpen, Highlight } from 'lucide-react';
+import { Download, Trash2, Wifi, Database, BookOpen, Star } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePWA } from '../hooks/usePWA';
 import { offlineSyncManager } from '../utils/offlineSync';
@@ -121,7 +121,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({ isOpen, onClose 
                 {[
                   { key: 'cache' as const, label: 'Cache', icon: Database },
                   { key: 'bookmarks' as const, label: 'Bookmarks', icon: BookOpen },
-                  { key: 'highlights' as const, label: 'Highlights', icon: Highlight }
+                  { key: 'highlights' as const, label: 'Highlights', icon: Star }
                 ].map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -251,7 +251,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({ isOpen, onClose 
                   >
                     {highlights.length === 0 ? (
                       <div className="text-center py-8">
-                        <Highlight className="w-12 h-12 mx-auto mb-3 opacity-50" style={{ color: currentTheme.colors.textSecondary }} />
+                        <Star className="w-12 h-12 mx-auto mb-3 opacity-50" style={{ color: currentTheme.colors.textSecondary }} />
                         <p style={{ color: currentTheme.colors.textSecondary }}>No highlights saved</p>
                       </div>
                     ) : (

@@ -1,9 +1,9 @@
+/* React Virtualized styles */
+@import 'react-virtualized/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* React Virtualized styles */
-@import 'react-virtualized/styles.css';
 
 /* D3.js styles */
 .d3-tip {
