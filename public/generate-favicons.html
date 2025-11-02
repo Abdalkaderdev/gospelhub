@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Favicons</title></head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+const sizes = [16, 32, 192, 512];
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+sizes.forEach(size => {
+  canvas.width = canvas.height = size;
+  
+  // Background
+  ctx.fillStyle = '#d97706';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Cross
+  ctx.strokeStyle = '#fafaf9';
+  ctx.lineWidth = Math.max(2, size / 10);
+  ctx.lineCap = 'round';
+  
+  ctx.beginPath();
+  ctx.moveTo(size/2, size * 0.2);
+  ctx.lineTo(size/2, size * 0.8);
+  ctx.moveTo(size * 0.25, size/2);
+  ctx.lineTo(size * 0.75, size/2);
+  ctx.stroke();
+  
+  // Download
+  const link = document.createElement('a');
+  link.download = `icon-${size}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+});
+</script>
+</body>
+</html>

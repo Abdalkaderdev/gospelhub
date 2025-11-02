@@ -2,37 +2,75 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Premium Bible Reader with advanced theming, analytics, study tools, and offline support. Read Scripture with parallel translations, word studies, and commentary." />
-    <meta name="keywords" content="Bible, Scripture, Bible study, Bible reader, KJV, ESV, NIV, commentary, word study, cross references" />
+    <meta name="keywords" content="Bible, Scripture, Bible study, Bible reader, KJV, ESV, NIV, commentary, word study, cross references, reading plans, bookmarks, highlights" />
     <meta name="author" content="GospelHub" />
     <meta name="theme-color" content="#d97706" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="GospelHub" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://gospelhub.space/" />
     <meta property="og:title" content="GospelHub - Premium Bible Reader" />
-    <meta property="og:description" content="Premium Bible Reader with advanced theming, analytics, study tools, and offline support" />
+    <meta property="og:description" content="Premium Bible Reader with advanced theming, analytics, study tools, and offline support. Features parallel translations, word studies, reading plans, bookmarks, and comprehensive study tools." />
     <meta property="og:site_name" content="GospelHub" />
+    <meta property="og:image" content="https://gospelhub.space/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:locale" content="en_US" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://gospelhub.space/" />
     <meta property="twitter:title" content="GospelHub - Premium Bible Reader" />
-    <meta property="twitter:description" content="Premium Bible Reader with advanced theming, analytics, study tools, and offline support" />
+    <meta property="twitter:description" content="Premium Bible Reader with advanced theming, analytics, study tools, and offline support. Features parallel translations, word studies, reading plans, bookmarks, and comprehensive study tools." />
+    <meta property="twitter:image" content="https://gospelhub.space/icon-512.png" />
+    <meta property="twitter:creator" content="@GospelHub" />
     
     <link rel="canonical" href="https://gospelhub.space/" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://gospelhub.space" />
     
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="GospelHub" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/icon-16.png" sizes="16x16" type="image/png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
     
-    <title>GospelHub - Premium Bible Reader</title>
+    <title>GospelHub - Premium Bible Reader | Study Scripture with Advanced Tools</title>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "GospelHub",
+      "description": "Premium Bible Reader with advanced theming, analytics, study tools, and offline support",
+      "url": "https://gospelhub.space",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "GospelHub"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,17 +1,21 @@
-const CACHE_NAME = 'gospelhub-v1';
-const STATIC_CACHE = 'gospelhub-static-v1';
-const DYNAMIC_CACHE = 'gospelhub-dynamic-v1';
+const CACHE_NAME = 'gospelhub-v2';
+const STATIC_CACHE = 'gospelhub-static-v2';
+const DYNAMIC_CACHE = 'gospelhub-dynamic-v2';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/offline.html',
+  '/favicon.svg',
+  '/icon-16.png',
+  '/icon-32.png',
   '/icon-192.png',
   '/icon-512.png'
 ];
 
-const BIBLE_DATA_CACHE = 'bible-data-v1';
+const BIBLE_DATA_CACHE = 'bible-data-v2';
+const TRANSLATION_CACHE = 'translations-v1';
 
 // Install event
 self.addEventListener('install', event => {
@@ -58,8 +62,14 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
 
   // Handle Bible data requests
-  if (url.pathname.startsWith('/api/bible/')) {
+  if (url.pathname.startsWith('/api/bible/') || url.pathname.includes('/src/data/processed/')) {
     event.respondWith(cacheFirstStrategy(request, BIBLE_DATA_CACHE));
+    return;
+  }
+  
+  // Handle translation files
+  if (url.pathname.includes('.json') && url.pathname.includes('data')) {
+    event.respondWith(cacheFirstStrategy(request, TRANSLATION_CACHE));
     return;
   }
 

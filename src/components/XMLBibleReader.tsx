@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BibleWord } from '../types';
 import { getXMLChapter } from '../data/xml';
 import { XMLWordStudy } from './study/XMLWordStudy';
+import { CrossLoader } from './CrossLoader';
 
 interface XMLBibleReaderProps {
   translationId: string;
@@ -30,8 +31,14 @@ export const XMLBibleReader: React.FC<XMLBibleReaderProps> = ({
 
   if (!currentChapter) {
     return (
-      <div className="text-gray-600 p-4 text-center">
-        Chapter not found
+      <div className="flex flex-col items-center justify-center py-8 space-y-4">
+        <CrossLoader 
+          variant="morphing"
+          size={32}
+          color="#6b7280"
+          duration={2}
+        />
+        <p className="text-gray-600">Loading chapter...</p>
       </div>
     );
   }

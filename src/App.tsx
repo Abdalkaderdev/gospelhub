@@ -5,6 +5,8 @@ import { BibleReference, AppState, NavigationDirection, BibleVerse } from "./typ
 import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
 import { SearchService } from "./search";
+import { TranslationSelector } from "./components/TranslationSelector";
+import { useXMLBible } from "./hooks/useXMLBible";
 
 import { 
   LazyAnalyticsDashboard,
@@ -29,6 +31,23 @@ import { LazyReadingPlanView, LazyThemeSwitcher, LazyOfflineManager } from "./co
 import { useTheme } from "./contexts/ThemeContext";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { VirtualizedVerseList } from "./components/optimized/VirtualizedVerseList";
+import { VerseHighlighter, HighlightsPanel } from "./components/VerseHighlighter";
+import { TranslationSwitcher } from "./components/TranslationSwitcher";
+import { useTranslation } from "./hooks/useTranslation";
+import { EnhancedVerseText } from "./components/EnhancedVerseText";
+import { isOldTestament } from "./utils/bibleBooks";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { performanceMonitor, registerServiceWorker } from "./utils/performance";
+import { errorReporter, setupGlobalErrorHandling } from "./utils/errorReporting";
+import { preloadCriticalComponents } from "./utils/lazyLoading";
+import { BibleSearch } from "./components/BibleSearch";
+import { BookmarkButton, BookmarksPanel } from "./components/BookmarkSystem";
+import { SwipeGestureHandler } from "./components/SwipeGestureHandler";
+import { ChapterTransition } from "./components/ChapterTransition";
+import { ReadingPlans } from "./components/ReadingPlans";
+import { StudyTools } from "./components/StudyTools";
+import { ParallelBibleView } from "./components/ParallelBibleView";
+import { AdvancedStudyPanel } from "./components/AdvancedStudyPanel";
 import { usePWA } from "./hooks/usePWA";
 import { offlineSyncManager } from "./utils/offlineSync";
 import { triggerHaptic, isMobileDevice } from "./utils/haptics";
@@ -54,12 +73,25 @@ const App = () => {
   const [showBookIntro, setShowBookIntro] = useState(false);
   const [showReadingPlan, setShowReadingPlan] = useState(false);
   const [showOfflineManager, setShowOfflineManager] = useState(false);
+  const [showTranslationSelector, setShowTranslationSelector] = useState(false);
+  const [showHighlights, setShowHighlights] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | 'none'>('none');
+  const [showReadingPlans, setShowReadingPlans] = useState(false);
+  const [showStudyToolsModal, setShowStudyToolsModal] = useState(false);
+  const [showParallelView, setShowParallelView] = useState(false);
+  const [parallelTranslations, setParallelTranslations] = useState<any[]>([]);
+  const [loadedTranslations, setLoadedTranslations] = useState<Record<string, any>>({});
+  const { currentTranslation, loading: translationLoading, loadTranslation } = useTranslation(selectedTranslationId);
+  const [xmlTranslationId, setXmlTranslationId] = useState('eng-kjv');
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [parallelConfig, setParallelConfig] = useState({ translations: [selectedTranslationId], syncScroll: true, highlightDifferences: false });
   const [keyboardNavigation, setKeyboardNavigation] = useState(false);
   const [showThemeSwitcher, setShowThemeSwitcher] = useState(false);
   const { currentTheme } = useTheme();
   const { isOnline } = usePWA();
+  const { books: xmlBooks, loading: xmlLoading, error: xmlError } = useXMLBible(xmlTranslationId);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const selectedTranslation = useMemo(
@@ -80,6 +112,12 @@ const App = () => {
 
 
 
+  useEffect(() => {
+    registerServiceWorker();
+    setupGlobalErrorHandling();
+    preloadCriticalComponents();
+  }, []);
+  
   useEffect(() => {
     if (appState.currentBook && appState.currentChapter) {
       analyticsManager.startSession(appState.currentBook, appState.currentChapter, selectedTranslationId);
@@ -138,6 +176,7 @@ const App = () => {
   }, [appState, selectedTranslation]);
 
   const handleSearch = useCallback(async (query: string) => {
+    errorReporter.trackInteraction('search', { query: query.substring(0, 50) });
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -154,10 +193,18 @@ const App = () => {
     }
   }, [searchService]);
 
-  const handleNavigate = useCallback((direction: "prev" | "next") => {
+  const handleNavigate = useCallback((direction: "prev" | "next", fromSwipe = false) => {
+    errorReporter.trackInteraction('navigate', { direction, fromSwipe });
     const availableBooks = Object.keys(selectedTranslation.data);
     const navDirection = direction === "next" ? NavigationDirection.Next : NavigationDirection.Previous;
     const newState = navigateChapter(appState, navDirection, availableBooks);
+    
+    // Set swipe direction for animation
+    if (fromSwipe) {
+      setSwipeDirection(direction === 'next' ? 'left' : 'right');
+    } else {
+      setSwipeDirection('none');
+    }
     
     // Trigger haptic feedback on mobile
     if (isMobileDevice()) {
@@ -166,9 +213,13 @@ const App = () => {
     
     setAppState(newState);
     announceToScreenReader(`Navigated to ${newState.currentBook} chapter ${newState.currentChapter}`);
+    
+    // Reset swipe direction after animation
+    setTimeout(() => setSwipeDirection('none'), 500);
   }, [selectedTranslation.data, appState]);
 
   const handleRefresh = useCallback(async () => {
+    errorReporter.trackInteraction('refresh');
     setIsLoading(true);
     // Simulate refresh delay
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -198,7 +249,7 @@ const App = () => {
   const progressData = useReadingProgress(scrollContainerRef, combinedText);
 
   return (
-    <>
+    <ErrorBoundary>
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
@@ -213,11 +264,8 @@ const App = () => {
       >
         {displayVerses.length > 0 && !searchTerm.trim() && (
           <ReadingProgressBar 
-            progress={progressData.progress}
-            estimatedTime={progressData.estimatedReadingTime}
-            wordsRead={progressData.wordsRead}
-            totalWords={progressData.totalWords}
-            currentTheme={currentTheme}
+            totalVerses={currentVerses.length}
+            currentChapter={`${appState.currentBook} ${appState.currentChapter}`}
           />
         )}
         
@@ -268,7 +316,29 @@ const App = () => {
                 color: showStudyTools ? 'white' : currentTheme.colors.text
               }}
             >
-              📚 Study Tools
+              📚 Study Panel
+            </button>
+            <button
+              onClick={() => setShowStudyToolsModal(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              🔍 Study Tools
+            </button>
+            <button
+              onClick={() => setShowParallelView(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              🔄 Parallel View
             </button>
             <button
               onClick={() => setShowBookIntro(true)}
@@ -282,7 +352,7 @@ const App = () => {
               📖 Book Intro
             </button>
             <button
-              onClick={() => setShowReadingPlan(true)}
+              onClick={() => setShowReadingPlans(true)}
               className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
               style={{ 
                 borderColor: currentTheme.colors.border,
@@ -290,7 +360,18 @@ const App = () => {
                 color: currentTheme.colors.text
               }}
             >
-              📅 Reading Plan
+              📅 Reading Plans
+            </button>
+            <button
+              onClick={() => setShowTranslationSelector(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              🌍 Translations
             </button>
             <button
               onClick={() => setShowOfflineManager(true)}
@@ -303,6 +384,58 @@ const App = () => {
             >
               {isOnline ? '💾' : '📱'} Offline
             </button>
+            <button
+              onClick={() => window.location.href = '/enhanced'}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.primary,
+                color: 'white'
+              }}
+            >
+              ✨ Enhanced Features
+            </button>
+            <button
+              onClick={() => setShowHighlights(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              🖍️ Highlights
+            </button>
+            <button
+              onClick={() => setShowSearch(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              🔍 Search All
+            </button>
+            <button
+              onClick={() => setShowBookmarks(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              📑 Bookmarks
+            </button>
+            <TranslationSwitcher
+              currentTranslation={currentTranslation.id}
+              onTranslationChange={(id, data) => {
+                loadTranslation(id, data);
+                setSelectedTranslationId(id);
+                setLoadedTranslations(prev => ({ ...prev, [id]: { data } }));
+              }}
+            />
           </div>
         </motion.header>
 
@@ -371,16 +504,18 @@ const App = () => {
                   </label>
 
                   <div>
-                    <span className="mb-2 block text-xs sm:text-sm font-medium" style={{ color: currentTheme.colors.textSecondary }}>Advanced Search</span>
-                    <AdvancedSearch 
-                      searchService={searchService}
-                      currentTheme={currentTheme}
-                      onResultClick={(book, chapter, verse) => {
-                        setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
-                        setSearchTerm('');
-                        setSearchResults([]);
+                    <span className="mb-2 block text-xs sm:text-sm font-medium" style={{ color: currentTheme.colors.textSecondary }}>Quick Search</span>
+                    <button
+                      onClick={() => setShowSearch(true)}
+                      className="w-full px-4 py-3 text-left rounded-xl border transition-all hover:border-opacity-70"
+                      style={{
+                        borderColor: currentTheme.colors.border,
+                        backgroundColor: currentTheme.colors.surface,
+                        color: currentTheme.colors.textSecondary
                       }}
-                    />
+                    >
+                      🔍 Search across all translations...
+                    </button>
                   </div>
                 </div>
               </div>
@@ -441,12 +576,15 @@ const App = () => {
 
           <section className={showStudyTools ? "lg:col-span-4" : "lg:col-span-7"}>
             <PullToRefresh onRefresh={handleRefresh}>
-              <SwipeNavigation 
-                onSwipeLeft={() => handleNavigate('next')}
-                onSwipeRight={() => handleNavigate('prev')}
+              <SwipeGestureHandler
+                onSwipeLeft={() => handleNavigate('next', true)}
+                onSwipeRight={() => handleNavigate('prev', true)}
                 disabled={isLoading}
               >
-                <PageTransition pageKey={`${appState.currentBook}-${appState.currentChapter}`}>
+                <ChapterTransition 
+                  chapterKey={`${appState.currentBook}-${appState.currentChapter}`}
+                  direction={swipeDirection}
+                >
                   <motion.div
                     className="rounded-2xl sm:rounded-3xl border p-6 sm:p-8 shadow-lg backdrop-blur-sm theme-transition"
                     style={{
@@ -474,10 +612,11 @@ const App = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <CrossAssembly 
+                      <CrossLoader 
+                        variant="morphing"
                         size={48}
                         color={currentTheme.colors.primary}
-                        thickness={6}
+                        duration={2}
                       />
                     </motion.div>
                   ) : displayVerses.length === 0 ? (
@@ -488,6 +627,7 @@ const App = () => {
                       transition={{ duration: 0.4 }}
                     >
                       <CrossLoader 
+                        variant="particle"
                         size={32}
                         color={currentTheme.colors.textSecondary}
                         duration={2}
@@ -495,30 +635,65 @@ const App = () => {
                       <p style={{ color: currentTheme.colors.textSecondary }}>No verses found</p>
                     </motion.div>
                   ) : (
-                    <VirtualizedVerseList
-                      verses={displayVerses.map(item => {
-                        if ("verse" in item) {
-                          return {
-                            book: item.book || '',
-                            chapter: item.chapter || 0,
-                            verse: item.verse,
-                            text: item.text
-                          };
-                        } else {
-                          return item.verse;
-                        }
+                    <div className="space-y-2">
+                      {displayVerses.map((item, index) => {
+                        const verseData = "verse" in item ? {
+                          book: item.book || appState.currentBook,
+                          chapter: item.chapter || appState.currentChapter,
+                          verse: item.verse,
+                          text: item.text
+                        } : item.verse;
+                        
+                        return (
+                          <VerseHighlighter
+                            key={`${verseData.book}-${verseData.chapter}-${verseData.verse}`}
+                            book={verseData.book}
+                            chapter={verseData.chapter}
+                            verse={verseData.verse}
+                            text={verseData.text}
+                          >
+                            <div 
+                              className="p-3 rounded-lg hover:bg-opacity-50 transition-all cursor-pointer"
+                              style={{ 
+                                backgroundColor: currentTheme.colors.background + '40',
+                                direction: currentTranslation.direction,
+                                textAlign: currentTranslation.direction === 'rtl' ? 'right' : 'left'
+                              }}
+                              onClick={() => {
+                                setSelectedWord(verseData.text.split(' ')[0]);
+                                announceToScreenReader(`Selected verse ${verseData.verse}`);
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span 
+                                  className={`font-medium ${currentTranslation.direction === 'rtl' ? 'ml-2' : 'mr-2'}`}
+                                  style={{ color: currentTheme.colors.primary }}
+                                >
+                                  {verseData.verse}
+                                </span>
+                                <BookmarkButton
+                                  book={verseData.book}
+                                  chapter={verseData.chapter}
+                                  verse={verseData.verse}
+                                  text={verseData.text}
+                                />
+                              </div>
+                              <span style={{ color: currentTheme.colors.text }}>
+                                <EnhancedVerseText 
+                                  text={verseData.text}
+                                  testament={isOldTestament(verseData.book) ? 'old' : 'new'}
+                                />
+                              </span>
+                            </div>
+                          </VerseHighlighter>
+                        );
                       })}
-                      onVerseClick={(verse) => {
-                        setSelectedWord(verse.text.split(' ')[0]);
-                        announceToScreenReader(`Selected verse ${verse.verse}`);
-                      }}
-                      height={400}
-                    />
+                    </div>
                   )}
                   </div>
                   </motion.div>
-                </PageTransition>
-              </SwipeNavigation>
+                </ChapterTransition>
+              </SwipeGestureHandler>
             </PullToRefresh>
           </section>
         </div>
@@ -553,32 +728,82 @@ const App = () => {
         />
       </LazyWrapper>
       
+      <ReadingPlans
+        isOpen={showReadingPlans}
+        onClose={() => setShowReadingPlans(false)}
+        onNavigate={(book, chapter) => {
+          setAppState({ currentBook: book, currentChapter: chapter, currentVerse: 'all' });
+          setShowReadingPlans(false);
+        }}
+      />
+      
+      <StudyTools
+        isOpen={showStudyToolsModal}
+        onClose={() => setShowStudyToolsModal(false)}
+        currentVerse={typeof appState.currentVerse === 'number' ? {
+          book: appState.currentBook,
+          chapter: appState.currentChapter,
+          verse: appState.currentVerse
+        } : undefined}
+        onNavigate={(book, chapter, verse) => {
+          setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse || 'all' });
+          setShowStudyToolsModal(false);
+        }}
+      />
+      
       <AnimatePresence>
-        {showReadingPlan && (
+        {showParallelView && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowReadingPlan(false)}
+            onClick={() => setShowParallelView(false)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+              style={{
+                backgroundColor: currentTheme.colors.surface,
+                border: `1px solid ${currentTheme.colors.border}`
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative">
-                <button
-                  onClick={() => setShowReadingPlan(false)}
-                  className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-colors"
-                >
-                  ✕
-                </button>
-                <LazyWrapper>
-                  <LazyReadingPlanView />
-                </LazyWrapper>
+              <div className="p-6 border-b" style={{ borderColor: currentTheme.colors.border }}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold" style={{ color: currentTheme.colors.text }}>
+                    Parallel Bible View
+                  </h2>
+                  <button
+                    onClick={() => setShowParallelView(false)}
+                    className="p-2 rounded-lg hover:opacity-70 transition-opacity"
+                    style={{ color: currentTheme.colors.textSecondary }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <ParallelBibleView
+                  book={appState.currentBook}
+                  chapter={appState.currentChapter}
+                  translations={parallelTranslations.length > 0 ? parallelTranslations : [
+                    { id: currentTranslation.id, name: currentTranslation.name, data: currentTranslation }
+                  ]}
+                  onAddTranslation={() => {
+                    const newTranslation = {
+                      id: 'eng-esv',
+                      name: 'English Standard Version',
+                      data: currentTranslation
+                    };
+                    setParallelTranslations(prev => [...prev, newTranslation]);
+                  }}
+                  onRemoveTranslation={(id) => {
+                    setParallelTranslations(prev => prev.filter(t => t.id !== id));
+                  }}
+                />
               </div>
             </motion.div>
           </motion.div>
@@ -592,6 +817,121 @@ const App = () => {
         />
       </LazyWrapper>
       
+      <HighlightsPanel 
+        isOpen={showHighlights}
+        onClose={() => setShowHighlights(false)}
+      />
+      
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowSearch(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+              style={{
+                backgroundColor: currentTheme.colors.surface,
+                border: `1px solid ${currentTheme.colors.border}`
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b" style={{ borderColor: currentTheme.colors.border }}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold" style={{ color: currentTheme.colors.text }}>
+                    Search Bible
+                  </h2>
+                  <button
+                    onClick={() => setShowSearch(false)}
+                    className="p-2 rounded-lg hover:opacity-70 transition-opacity"
+                    style={{ color: currentTheme.colors.textSecondary }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <BibleSearch
+                  translations={{
+                    [currentTranslation.id]: currentTranslation,
+                    ...loadedTranslations
+                  }}
+                  onResultClick={(book, chapter, verse) => {
+                    setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
+                    setShowSearch(false);
+                  }}
+                  currentBook={appState.currentBook}
+                  currentChapter={appState.currentChapter}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <BookmarksPanel
+        isOpen={showBookmarks}
+        onClose={() => setShowBookmarks(false)}
+        onNavigate={(book, chapter, verse) => {
+          setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
+          setShowBookmarks(false);
+        }}
+      />
+      
+      <AnimatePresence>
+        {showTranslationSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowTranslationSelector(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+              style={{
+                backgroundColor: currentTheme.colors.surface,
+                border: `1px solid ${currentTheme.colors.border}`
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b" style={{ borderColor: currentTheme.colors.border }}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold" style={{ color: currentTheme.colors.text }}>
+                    Choose Translation
+                  </h2>
+                  <button
+                    onClick={() => setShowTranslationSelector(false)}
+                    className="p-2 rounded-lg hover:opacity-70 transition-opacity"
+                    style={{ color: currentTheme.colors.textSecondary }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <TranslationSelector
+                  selectedTranslation={xmlTranslationId}
+                  onTranslationChange={(id) => {
+                    setXmlTranslationId(id);
+                    setShowTranslationSelector(false);
+                  }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       <InstallPrompt />
       
       <FloatingActionButton 
@@ -602,7 +942,7 @@ const App = () => {
       />
         </div>
       </main>
-    </>
+    </ErrorBoundary>
   );
 };
 

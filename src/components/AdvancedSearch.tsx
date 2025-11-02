@@ -4,6 +4,7 @@ import Highlighter from 'react-highlight-words';
 import { SearchService, SearchFilters } from '../search';
 import { BibleSearchResult } from '../types';
 import { triggerHaptic, isMobileDevice } from '../utils/haptics';
+import { CrossLoader } from './CrossLoader';
 
 interface AdvancedSearchProps {
   searchService: SearchService;
@@ -85,16 +86,14 @@ export const AdvancedSearch = ({ searchService, currentTheme, onResultClick }: A
         />
         
         {isLoading && (
-          <motion.div
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          >
-            <div 
-              className="w-4 h-4 border-2 border-t-transparent rounded-full"
-              style={{ borderColor: currentTheme.colors.primary }}
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <CrossLoader 
+              variant="neon"
+              size={16}
+              color={currentTheme.colors.primary}
+              duration={1.5}
             />
-          </motion.div>
+          </div>
         )}
       </div>
 

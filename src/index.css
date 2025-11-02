@@ -5,6 +5,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .verse-number {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+[dir="ltr"] .verse-number {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+/* Arabic font support */
+[lang="ar"] {
+  font-family: 'Amiri', 'Noto Sans Arabic', 'Arabic Typesetting', serif;
+  line-height: 1.8;
+  font-size: 1.1em;
+}
+
 /* D3.js styles */
 .d3-tip {
   line-height: 1;
@@ -331,6 +353,18 @@
 
 .touch-manipulation {
   touch-action: manipulation;
+}
+
+/* Swipe gesture styles */
+.swipe-container {
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.swipe-indicator {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Prevent text selection during gestures */

@@ -1,3 +1,6 @@
+// Re-export Bible types from dedicated module
+export * from './bible';
+
 export interface BibleReference {
     book: string;
     chapter: number;
