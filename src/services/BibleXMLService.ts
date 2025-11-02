@@ -2,7 +2,6 @@ import { BibleBook, BibleChapter, BibleVerse, BibleWord } from '../types';
 
 class BibleXMLService {
   private cache = new Map<string, BibleBook[]>();
-  private baseUrl = 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/main';
 
   async loadTranslation(translationId: string): Promise<BibleBook[]> {
     if (this.cache.has(translationId)) {
@@ -10,8 +9,9 @@ class BibleXMLService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/${translationId}.xml`);
-      const xmlText = await response.text();
+      // Import the XML file dynamically
+      const xmlModule = await import(`../data/xml/${translationId}.xml?raw`);
+      const xmlText = xmlModule.default;
       const books = this.parseXML(xmlText);
       this.cache.set(translationId, books);
       return books;
