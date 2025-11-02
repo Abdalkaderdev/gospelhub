@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookIntroduction as BookIntroType } from '../../types';
-import { studyService } from '../../study';
+import { bookIntroductions, BookIntroduction as BookIntroType } from '../../data/bookIntroductions';
+import { characters } from '../../data/crossReferences';
 
 interface BookIntroductionProps {
   book: string;
@@ -10,8 +10,16 @@ interface BookIntroductionProps {
 }
 
 export const BookIntroduction = ({ book, isOpen, onClose }: BookIntroductionProps) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'outline' | 'timeline'>('overview');
-  const introduction = studyService.getBookIntroduction(book);
+  const [activeTab, setActiveTab] = useState<'overview' | 'outline' | 'timeline' | 'characters'>('overview');
+  const introduction = bookIntroductions[book] || {
+    author: 'Unknown',
+    dateWritten: 'Unknown',
+    audience: 'Unknown',
+    purpose: 'No introduction available for this book.',
+    keyThemes: [],
+    outline: [],
+    timeline: []
+  };
 
   return (
     <AnimatePresence>
@@ -32,27 +40,38 @@ export const BookIntroduction = ({ book, isOpen, onClose }: BookIntroductionProp
           >
             <div className="p-6 border-b border-[var(--color-border)]">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-light text-[var(--color-text)]">Book of {book}</h2>
+                <div>
+                  <h2 className="text-2xl font-light text-[var(--color-text)]">📖 Book of {book}</h2>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                    {introduction.author} • {introduction.dateWritten}
+                  </p>
+                </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
+                  className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
                 >
                   ✕
                 </button>
               </div>
               
               <div className="flex space-x-1 mt-4">
-                {(['overview', 'outline', 'timeline'] as const).map((tab) => (
+                {([
+                  { id: 'overview', label: 'Overview', icon: '📜' },
+                  { id: 'outline', label: 'Outline', icon: '🗺️' },
+                  { id: 'timeline', label: 'Timeline', icon: '📅' },
+                  { id: 'characters', label: 'Characters', icon: '👥' }
+                ] as const).map((tab) => (
                   <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === tab
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeTab === tab.id
                         ? 'bg-[var(--color-primary)] text-white'
                         : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
                     }`}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    <span>{tab.icon}</span>
+                    {tab.label}
                   </button>
                 ))}
               </div>
@@ -166,6 +185,45 @@ export const BookIntroduction = ({ book, isOpen, onClose }: BookIntroductionProp
                       </motion.div>
                     ))}
                   </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'characters' && (
+                <motion.div
+                  className="space-y-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="text-lg font-semibold text-[var(--color-text)]">Key Characters</h3>
+                  {characters[book] && characters[book].length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {characters[book].map((character, index) => (
+                        <motion.div
+                          key={character.name}
+                          className="p-4 bg-[var(--color-background)] rounded-xl border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-[var(--color-text)]">👤 {character.name}</h4>
+                            <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-primary)] text-white">
+                              {character.role}
+                            </span>
+                          </div>
+                          {character.description && (
+                            <p className="text-sm text-[var(--color-text-secondary)]">{character.description}</p>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-2">👥</div>
+                      <p className="text-[var(--color-text-secondary)]">No character information available for {book}</p>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </div>

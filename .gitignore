@@ -7,3 +7,6 @@ dist
 *.log
 .vscode
 .idea
+
+# Large Bible data files
+src/data/processed/*.json

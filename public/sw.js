@@ -101,6 +101,13 @@ self.addEventListener('fetch', event => {
 
 // Background sync for bookmarks and highlights
 self.addEventListener('sync', event => {
+  // Validate sync tags to prevent CSRF
+  const allowedTags = ['sync-bookmarks', 'sync-highlights'];
+  if (!allowedTags.includes(event.tag)) {
+    console.warn('Invalid sync tag:', event.tag);
+    return;
+  }
+  
   if (event.tag === 'sync-bookmarks') {
     event.waitUntil(syncBookmarks());
   }
@@ -111,16 +118,28 @@ self.addEventListener('sync', event => {
 
 // Message handling for cache management
 self.addEventListener('message', event => {
+  // Validate message origin for security
+  if (event.origin && event.origin !== self.location.origin) {
+    console.warn('Invalid message origin:', event.origin);
+    return;
+  }
+  
   if (event.data && event.data.type === 'CACHE_BIBLE_CHAPTER') {
     const { book, chapter, data } = event.data;
-    caches.open(BIBLE_DATA_CACHE).then(cache => {
-      cache.put(`/api/bible/${book}/${chapter}`, new Response(JSON.stringify(data)));
-    });
+    // Validate book and chapter parameters
+    if (typeof book === 'string' && typeof chapter === 'number' && 
+        /^[a-zA-Z0-9\s]+$/.test(book) && chapter > 0 && chapter < 200) {
+      caches.open(BIBLE_DATA_CACHE).then(cache => {
+        cache.put(`/api/bible/${book}/${chapter}`, new Response(JSON.stringify(data)));
+      });
+    }
   }
   
   if (event.data && event.data.type === 'GET_CACHE_SIZE') {
     getCacheSize().then(size => {
-      event.ports[0].postMessage({ type: 'CACHE_SIZE', size });
+      if (event.ports && event.ports[0]) {
+        event.ports[0].postMessage({ type: 'CACHE_SIZE', size });
+      }
     });
   }
 });
@@ -158,32 +177,38 @@ async function networkFirstStrategy(request) {
 async function syncBookmarks() {
   try {
     const bookmarks = await getStoredData('pendingBookmarks');
-    if (bookmarks && bookmarks.length > 0) {
+    if (bookmarks && Array.isArray(bookmarks) && bookmarks.length > 0) {
       await fetch('/api/sync/bookmarks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+        },
         body: JSON.stringify(bookmarks)
       });
       await clearStoredData('pendingBookmarks');
     }
   } catch (error) {
-    console.error('Bookmark sync failed:', error);
+    console.error('Bookmark sync failed');
   }
 }
 
 async function syncHighlights() {
   try {
     const highlights = await getStoredData('pendingHighlights');
-    if (highlights && highlights.length > 0) {
+    if (highlights && Array.isArray(highlights) && highlights.length > 0) {
       await fetch('/api/sync/highlights', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+        },
         body: JSON.stringify(highlights)
       });
       await clearStoredData('pendingHighlights');
     }
   } catch (error) {
-    console.error('Highlights sync failed:', error);
+    console.error('Highlights sync failed');
   }
 }
 

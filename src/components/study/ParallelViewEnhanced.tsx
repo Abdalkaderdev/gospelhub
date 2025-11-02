@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { BibleVerse, ParallelView as ParallelViewType } from '../../types';
-import { bibleTranslations } from '../../data';
-import { compareTexts, TextDifference } from '../../utils/textComparison';
+import { bibleTranslations, getAllTranslations } from '../../data';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ParallelViewProps {
   book: string;
@@ -14,12 +13,13 @@ interface ParallelViewProps {
 
 interface VerseComparison {
   verseNumber: number;
-  versions: { [translationId: string]: { text: string; diffs?: TextDifference[] } };
+  versions: { [translationId: string]: { text: string } };
 }
 
 export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: ParallelViewProps) => {
   const [verseComparisons, setVerseComparisons] = useState<VerseComparison[]>([]);
-  const listRefs = useRef<{ [key: string]: List | null }>({});
+  const { currentTheme } = useTheme();
+  const scrollRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isScrolling = useRef(false);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
       
       for (let i = 0; i < maxVerses; i++) {
         const verseNumber = i + 1;
-        const versions: { [translationId: string]: { text: string; diffs?: TextDifference[] } } = {};
+        const versions: { [translationId: string]: { text: string } } = {};
         
         config.translations.forEach(translationId => {
           const verse = versesData[translationId]?.[i];
@@ -47,18 +47,6 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
           }
         });
         
-        if (config.highlightDifferences && config.translations.length === 2) {
-          const [trans1, trans2] = config.translations;
-          const text1 = versions[trans1]?.text || '';
-          const text2 = versions[trans2]?.text || '';
-          
-          if (text1 && text2) {
-            const { text1Diffs, text2Diffs } = compareTexts(text1, text2);
-            versions[trans1].diffs = text1Diffs;
-            versions[trans2].diffs = text2Diffs;
-          }
-        }
-        
         comparisons.push({ verseNumber, versions });
       }
       
@@ -66,16 +54,17 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
     };
     
     loadVerses();
-  }, [book, chapter, config.translations, config.highlightDifferences]);
+  }, [book, chapter, config.translations]);
 
-  const handleScroll = useCallback((translationId: string, { scrollTop }: { scrollTop: number }) => {
+  const handleScroll = useCallback((translationId: string, event: React.UIEvent<HTMLDivElement>) => {
     if (!config.syncScroll || isScrolling.current) return;
     
     isScrolling.current = true;
+    const scrollTop = event.currentTarget.scrollTop;
     
-    Object.keys(listRefs.current).forEach(id => {
-      if (id !== translationId && listRefs.current[id]) {
-        listRefs.current[id]!.scrollToPosition(scrollTop);
+    Object.keys(scrollRefs.current).forEach(id => {
+      if (id !== translationId && scrollRefs.current[id]) {
+        scrollRefs.current[id]!.scrollTop = scrollTop;
       }
     });
     
@@ -102,51 +91,14 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
     }
   };
 
-  const renderDiffText = (diffs: TextDifference[]) => {
-    return diffs.map((diff, index) => {
-      let className = '';
-      if (diff.type === 'added') className = 'bg-green-100 text-green-800 px-1 rounded';
-      if (diff.type === 'removed') className = 'bg-red-100 text-red-800 px-1 rounded';
-      
-      return (
-        <span key={index} className={className}>
-          {diff.text}{' '}
-        </span>
-      );
-    });
-  };
-
-  const renderVerseRow = ({ index, key, style }: ListRowProps, translationId: string) => {
-    const comparison = verseComparisons[index];
-    const versionData = comparison?.versions[translationId];
-    
-    if (!versionData) {
-      return (
-        <div key={key} style={{...style, borderColor: 'var(--color-border)'}} className="p-3 border-b">
-          <div className="text-gray-400 text-sm">Verse {comparison?.verseNumber}</div>
-        </div>
-      );
-    }
-    
-    return (
-      <div key={key} style={{...style, borderColor: 'var(--color-border)'}} className="p-3 border-b">
-        <div className="flex items-start gap-3">
-          <span className="font-medium text-sm min-w-[2rem] mt-1" style={{ color: 'var(--color-primary)' }}>
-            {comparison.verseNumber}
-          </span>
-          <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--color-text)' }}>
-            {versionData.diffs ? renderDiffText(versionData.diffs) : versionData.text}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4 p-4 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+      <div className="flex flex-wrap items-center gap-4 p-4 rounded-xl border" style={{
+        backgroundColor: currentTheme.colors.surface,
+        borderColor: currentTheme.colors.border
+      }}>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm" style={{ color: currentTheme.colors.text }}>
             <input
               type="checkbox"
               checked={config.syncScroll}
@@ -155,7 +107,7 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
             />
             Sync Scroll
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm" style={{ color: currentTheme.colors.text }}>
             <input
               type="checkbox"
               checked={config.highlightDifferences}
@@ -170,11 +122,16 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
         <select
           onChange={(e) => addTranslation(e.target.value)}
           value=""
-          className="px-3 py-1 rounded border border-[var(--color-border)] text-sm"
+          className="px-3 py-1 rounded border text-sm"
+          style={{
+            borderColor: currentTheme.colors.border,
+            backgroundColor: currentTheme.colors.background,
+            color: currentTheme.colors.text
+          }}
           disabled={config.translations.length >= 3}
         >
           <option value="">Add Translation</option>
-          {bibleTranslations
+          {getAllTranslations()
             .filter(t => !config.translations.includes(t.id))
             .map(t => (
               <option key={t.id} value={t.id}>{t.abbreviation}</option>
@@ -194,39 +151,51 @@ export const ParallelViewEnhanced = ({ book, chapter, config, onConfigChange }: 
           return (
             <motion.div
               key={translationId}
-              className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden"
+              className="rounded-xl border overflow-hidden"
+              style={{
+                backgroundColor: currentTheme.colors.surface,
+                borderColor: currentTheme.colors.border
+              }}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-                <h3 className="font-medium text-[var(--color-text)] text-sm">
+              <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: currentTheme.colors.border }}>
+                <h3 className="font-medium text-sm" style={{ color: currentTheme.colors.text }}>
                   {translation?.abbreviation}
                 </h3>
                 {config.translations.length > 1 && (
                   <button
                     onClick={() => removeTranslation(translationId)}
-                    className="text-[var(--color-text-secondary)] hover:text-red-500 transition-colors text-sm"
+                    className="hover:text-red-500 transition-colors text-sm"
+                    style={{ color: currentTheme.colors.textSecondary }}
                   >
                     ✕
                   </button>
                 )}
               </div>
               
-              <div className="h-96">
-                <AutoSizer>
-                  {({ height, width }) => (
-                    <List
-                      ref={el => listRefs.current[translationId] = el}
-                      height={height}
-                      width={width}
-                      rowCount={verseComparisons.length}
-                      rowHeight={80}
-                      rowRenderer={(props) => renderVerseRow(props, translationId)}
-                      onScroll={({ scrollTop }) => handleScroll(translationId, { scrollTop })}
-                    />
-                  )}
-                </AutoSizer>
+              <div 
+                ref={el => scrollRefs.current[translationId] = el}
+                className="h-96 overflow-y-auto"
+                onScroll={(e) => handleScroll(translationId, e)}
+              >
+                {verseComparisons.map(comparison => {
+                  const versionData = comparison.versions[translationId];
+                  
+                  return (
+                    <div key={comparison.verseNumber} className="p-3 border-b" style={{ borderColor: currentTheme.colors.border }}>
+                      <div className="flex items-start gap-3">
+                        <span className="font-medium text-sm min-w-[2rem] mt-1" style={{ color: currentTheme.colors.primary }}>
+                          {comparison.verseNumber}
+                        </span>
+                        <p className="text-sm leading-relaxed flex-1" style={{ color: currentTheme.colors.text }}>
+                          {versionData?.text || `Verse ${comparison.verseNumber} not available`}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           );

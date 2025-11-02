@@ -26,46 +26,18 @@ interface Progress {
   longestStreak: number;
 }
 
-const readingPlans: ReadingPlan[] = [
-  {
-    id: '30-day-psalms',
-    name: '30-Day Psalms',
-    description: 'Read through Psalms in 30 days',
-    duration: 30,
-    icon: '🎵',
-    readings: Array.from({ length: 30 }, (_, i) => ({
-      day: i + 1,
-      book: 'Psalms',
-      chapters: [Math.floor(i * 5) + 1, Math.floor(i * 5) + 5].filter(c => c <= 150),
-      theme: i < 10 ? 'Praise' : i < 20 ? 'Trust' : 'Wisdom'
-    }))
-  },
-  {
-    id: '90-day-nt',
-    name: '90-Day New Testament',
-    description: 'Complete New Testament in 90 days',
-    duration: 90,
-    icon: '📖',
-    readings: [
-      { day: 1, book: 'Matthew', chapters: [1, 2, 3], theme: 'Birth of Jesus' },
-      { day: 2, book: 'Matthew', chapters: [4, 5, 6], theme: 'Sermon on the Mount' },
-      { day: 3, book: 'Matthew', chapters: [7, 8, 9], theme: 'Miracles' },
-      // ... more readings would be here
-    ]
-  },
-  {
-    id: 'chronological',
-    name: 'Chronological Bible',
-    description: 'Read the Bible in historical order',
-    duration: 365,
-    icon: '📅',
-    readings: [
-      { day: 1, book: 'Genesis', chapters: [1, 2, 3], theme: 'Creation' },
-      { day: 2, book: 'Genesis', chapters: [4, 5, 6], theme: 'Fall and Flood' },
-      // ... more readings would be here
-    ]
-  }
-];
+import { readingPlans as importedPlans } from '../data/readingPlans';
+
+const readingPlans = importedPlans.map(plan => ({
+  ...plan,
+  icon: plan.id === 'bible-in-year' ? '📅' : plan.id === 'new-testament-30' ? '📖' : plan.id === 'psalms-proverbs' ? '🎵' : '✝️',
+  readings: plan.readings.map(reading => ({
+    day: reading.day,
+    book: reading.book,
+    chapters: [reading.chapter],
+    theme: reading.verses || 'Daily Reading'
+  }))
+}));
 
 interface ReadingPlansProps {
   isOpen: boolean;

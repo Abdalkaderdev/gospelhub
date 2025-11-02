@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.gospelhub.space; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta name="description" content="Premium Bible Reader with advanced theming, analytics, study tools, and offline support. Read Scripture with parallel translations, word studies, and commentary." />
     <meta name="keywords" content="Bible, Scripture, Bible study, Bible reader, KJV, ESV, NIV, commentary, word study, cross references, reading plans, bookmarks, highlights" />
     <meta name="author" content="GospelHub" />
@@ -51,7 +56,7 @@
     <title>GospelHub - Premium Bible Reader | Study Scripture with Advanced Tools</title>
     
     <!-- Structured Data -->
-    <script type="application/ld+json">
+    <script type="application/ld+json" nonce="structured-data">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
+import { sampleHighlights } from '../data/sampleHighlights';
 
 interface Highlight {
   id: string;
@@ -84,6 +85,9 @@ export const VerseHighlighter: React.FC<VerseHighlighterProps> = ({
     const stored = localStorage.getItem('verse-highlights');
     if (stored) {
       setHighlights(JSON.parse(stored));
+    } else {
+      setHighlights(sampleHighlights);
+      localStorage.setItem('verse-highlights', JSON.stringify(sampleHighlights));
     }
   }, []);
 
@@ -162,6 +166,9 @@ export const HighlightsPanel: React.FC<HighlightsPanelProps> = ({ isOpen, onClos
       const stored = localStorage.getItem('verse-highlights');
       if (stored) {
         setHighlights(JSON.parse(stored).sort((a: Highlight, b: Highlight) => b.timestamp - a.timestamp));
+      } else {
+        setHighlights(sampleHighlights.sort((a, b) => b.timestamp - a.timestamp));
+        localStorage.setItem('verse-highlights', JSON.stringify(sampleHighlights));
       }
     }
   }, [isOpen]);

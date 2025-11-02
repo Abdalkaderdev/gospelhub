@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Search, Globe, Book } from 'lucide-react';
+import { getAllTranslations } from '../data';
 
 interface Translation {
   id: string;
@@ -18,62 +19,12 @@ export const TranslationSelector = ({ selectedTranslation, onTranslationChange }
   const [selectedLanguage, setSelectedLanguage] = useState('all');
 
   const translations = useMemo(() => {
-    // Parse translation files to extract metadata
-    const translationList: Translation[] = [
-      // English
-      { id: 'EnglishKJBible', name: 'King James Version', language: 'English' },
-      { id: 'EnglishESVBible', name: 'English Standard Version', language: 'English' },
-      { id: 'EnglishNIVBible', name: 'New International Version', language: 'English' },
-      { id: 'EnglishNASBBible', name: 'New American Standard Bible', language: 'English' },
-      { id: 'EnglishNLTBible', name: 'New Living Translation', language: 'English' },
-      
-      // Spanish
-      { id: 'SpanishRVR1960Bible', name: 'Reina-Valera 1960', language: 'Spanish', year: '1960' },
-      { id: 'Spanish1569Bible', name: 'Reina-Valera Original', language: 'Spanish', year: '1569' },
-      { id: 'SpanishNVIBible', name: 'Nueva Versión Internacional', language: 'Spanish' },
-      
-      // French
-      { id: 'FrenchBible', name: 'Louis Segond 1910', language: 'French', year: '1910' },
-      { id: 'FrenchS21Bible', name: 'Segond 21', language: 'French' },
-      
-      // German
-      { id: 'GermanBible', name: 'Luther Bibel 1912', language: 'German', year: '1912' },
-      { id: 'GermanLUT17Bible', name: 'Luther 2017', language: 'German', year: '2017' },
-      
-      // Chinese
-      { id: 'ChineseSimplifiedBible', name: 'Chinese Union Version (Simplified)', language: 'Chinese' },
-      { id: 'ChineseTraditionalBible', name: 'Chinese Union Version (Traditional)', language: 'Chinese' },
-      
-      // Portuguese
-      { id: 'PortugueseNVIBible', name: 'Nova Versão Internacional', language: 'Portuguese' },
-      { id: 'Portuguese1969Bible', name: 'Almeida Revista e Atualizada', language: 'Portuguese', year: '1969' },
-      
-      // Arabic
-      { id: 'Arabic1978Bible', name: 'Arabic Van Dyke Bible', language: 'Arabic', year: '1978' },
-      { id: 'ArabicBible', name: 'Arabic Bible', language: 'Arabic' },
-      
-      // Russian
-      { id: 'Russian2012Bible', name: 'Russian Synodal Translation', language: 'Russian', year: '2012' },
-      { id: 'RussianSynodalBible', name: 'Russian Synodal Bible', language: 'Russian' },
-      
-      // Korean
-      { id: 'Korean2021Bible', name: 'Korean Revised Version', language: 'Korean', year: '2021' },
-      { id: 'KoreanBible', name: 'Korean Bible', language: 'Korean' },
-      
-      // Japanese
-      { id: 'Japanese1965Bible', name: 'Japanese Living Bible', language: 'Japanese', year: '1965' },
-      { id: 'JapaneseBible', name: 'Japanese Bible', language: 'Japanese' },
-      
-      // Hindi
-      { id: 'Hindi2017Bible', name: 'Hindi Bible', language: 'Hindi', year: '2017' },
-      { id: 'HindiBible', name: 'Hindi Bible', language: 'Hindi' },
-      
-      // Swahili
-      { id: 'Swahili2001Bible', name: 'Swahili Bible', language: 'Swahili', year: '2001' },
-      { id: 'SwahiliBible', name: 'Swahili Bible', language: 'Swahili' }
-    ];
-    
-    return translationList;
+    return getAllTranslations().map(t => ({
+      id: t.id,
+      name: t.name,
+      language: t.language,
+      year: t.abbreviation
+    }));
   }, []);
 
   const languages = useMemo(() => {

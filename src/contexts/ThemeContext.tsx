@@ -242,10 +242,16 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const root = document.documentElement;
     
     Object.entries(theme.colors).forEach(([key, value]) => {
-      root.style.setProperty(`--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, value);
+      // Sanitize CSS values to prevent XSS
+      const sanitizedValue = value.replace(/[^#a-fA-F0-9\s]/g, '');
+      if (sanitizedValue && /^#[0-9a-fA-F]{6}$/.test(sanitizedValue)) {
+        root.style.setProperty(`--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, sanitizedValue);
+      }
     });
 
-    root.setAttribute('data-theme', theme.id);
+    // Sanitize theme ID
+    const sanitizedThemeId = theme.id.replace(/[^a-zA-Z0-9_-]/g, '');
+    root.setAttribute('data-theme', sanitizedThemeId);
   };
 
   const setTheme = (themeId: string) => {

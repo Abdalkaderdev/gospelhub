@@ -1,11 +1,11 @@
 import React from 'react';
 import { BibleEnhanced } from '../components/BibleEnhanced';
-import { ThemeProvider } from '../contexts/ThemeContext';
+import { MainLayout } from './layouts/MainLayout';
 
 export const Enhanced: React.FC = () => {
   return (
-    <ThemeProvider>
+    <MainLayout title="Gospel Hub - Enhanced Study">
       <BibleEnhanced />
-    </ThemeProvider>
+    </MainLayout>
   );
 };

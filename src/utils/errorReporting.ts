@@ -2,13 +2,17 @@
 export const errorReporter = {
   // Log errors to console in development, external service in production
   logError: (error: Error, context?: string) => {
+    // Sanitize error message and context to prevent log injection
+    const sanitizedMessage = error.message.replace(/[\r\n\t]/g, ' ').substring(0, 500);
+    const sanitizedContext = context?.replace(/[\r\n\t]/g, ' ').substring(0, 200) || '';
+    
     const errorInfo = {
-      message: error.message,
-      stack: error.stack,
-      context,
+      message: sanitizedMessage,
+      stack: error.stack?.substring(0, 1000), // Limit stack trace length
+      context: sanitizedContext,
       timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href
+      userAgent: navigator.userAgent.substring(0, 200), // Limit user agent length
+      url: window.location.href.substring(0, 200) // Limit URL length
     };
 
     if (process.env.NODE_ENV === 'development') {
@@ -19,7 +23,10 @@ export const errorReporter = {
       try {
         fetch('/api/errors', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+          },
           body: JSON.stringify(errorInfo)
         }).catch(() => {
           // Fallback: store in localStorage for later sync
@@ -35,15 +42,18 @@ export const errorReporter = {
 
   // Track user interactions for debugging
   trackInteraction: (action: string, data?: any) => {
+    // Sanitize action string to prevent log injection
+    const sanitizedAction = action.replace(/[\r\n\t]/g, ' ').substring(0, 100);
+    
     if (process.env.NODE_ENV === 'development') {
-      console.log('User interaction:', action, data);
+      console.log('User interaction:', sanitizedAction, data);
     }
     
     // Store interaction history for debugging
     const interactions = JSON.parse(sessionStorage.getItem('interactions') || '[]');
     interactions.push({
-      action,
-      data,
+      action: sanitizedAction,
+      data: typeof data === 'string' ? data.substring(0, 200) : data, // Limit string data
       timestamp: Date.now()
     });
     sessionStorage.setItem('interactions', JSON.stringify(interactions.slice(-50))); // Keep last 50
@@ -51,12 +61,15 @@ export const errorReporter = {
 
   // Performance monitoring
   measurePerformance: (name: string, fn: () => void) => {
+    // Sanitize name to prevent log injection
+    const sanitizedName = name.replace(/[\r\n\t]/g, ' ').substring(0, 100);
+    
     const start = performance.now();
     fn();
     const end = performance.now();
     
     if (end - start > 100) { // Log slow operations
-      console.warn(`Slow operation: ${name} took ${end - start}ms`);
+      console.warn(`Slow operation: ${sanitizedName} took ${Math.round(end - start)}ms`);
     }
   }
 };

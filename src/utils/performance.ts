@@ -2,12 +2,15 @@
 export const performanceMonitor = {
   // Measure component render time
   measureRender: (componentName: string, fn: () => void) => {
+    // Sanitize component name to prevent log injection
+    const sanitizedName = componentName.replace(/[\r\n\t]/g, ' ').substring(0, 100);
+    
     const start = performance.now();
     fn();
     const end = performance.now();
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`${componentName} render time: ${end - start}ms`);
+      console.log(`${sanitizedName} render time: ${Math.round(end - start)}ms`);
     }
   },
 
@@ -60,8 +63,10 @@ export const performanceMonitor = {
 export const registerServiceWorker = async () => {
   if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('SW registered:', registration);
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/' // Explicitly set scope for security
+      });
+      console.log('SW registered successfully');
       
       // Handle updates
       registration.addEventListener('updatefound', () => {
@@ -78,7 +83,7 @@ export const registerServiceWorker = async () => {
         }
       });
     } catch (error) {
-      console.error('SW registration failed:', error);
+      console.error('SW registration failed');
     }
   }
 };

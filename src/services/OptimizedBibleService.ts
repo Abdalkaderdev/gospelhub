@@ -26,13 +26,15 @@ class OptimizedBibleService {
       return this.cache.get(translationId)!;
     }
 
+    // Validate translation ID to prevent code injection
+    if (!/^[a-zA-Z0-9_-]+$/.test(translationId)) {
+      console.warn(`Invalid translation ID: ${translationId}`);
+      return null;
+    }
+
     try {
       // For now, return null since we don't have processed translations as TS files
-      // const translationModule = await import(`../data/processed/${translationId}.json`);
       return null;
-      const translation = translationModule.default;
-      this.cache.set(translationId, translation);
-      return translation;
     } catch (error) {
       console.warn(`Failed to load processed translation ${translationId}:`, error);
       return null;
@@ -40,6 +42,12 @@ class OptimizedBibleService {
   }
 
   async loadBook(translationId: string, bookName: string): Promise<any | null> {
+    // Validate inputs to prevent injection attacks
+    if (!/^[a-zA-Z0-9_-]+$/.test(translationId) || !/^[a-zA-Z0-9_\s-]+$/.test(bookName)) {
+      console.warn(`Invalid translation ID or book name: ${translationId}, ${bookName}`);
+      return null;
+    }
+
     const cacheKey = `${translationId}:${bookName}`;
     
     if (this.bookCache.has(cacheKey)) {

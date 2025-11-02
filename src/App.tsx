@@ -1,12 +1,12 @@
 import { Fragment, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
-import { bibleTranslations, getTranslationById, defaultTranslationId } from "./data";
+import { bibleTranslations, getTranslationById, defaultTranslationId, getAllTranslations, loadTranslationFromJSON } from "./data";
 import { BibleReference, AppState, NavigationDirection, BibleVerse } from "./types";
 import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
 import { SearchService } from "./search";
+import { security, csrfToken } from "./utils/security";
 import { TranslationSelector } from "./components/TranslationSelector";
-
 
 import { 
   LazyAnalyticsDashboard,
@@ -55,6 +55,7 @@ import { analyticsManager } from "./analytics";
 import { performanceManager } from "./performance";
 import { updateMetaTags, generateVerseShareData, generateStructuredData } from "./utils/seo";
 import { announceToScreenReader, KEYBOARD_KEYS } from "./utils/accessibility";
+import { crossReferences, characters, themes } from "./data/crossReferences";
 
 const App = () => {
   const [selectedTranslationId, setSelectedTranslationId] = useState(defaultTranslationId);
@@ -94,10 +95,33 @@ const App = () => {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  const [loadedTranslation, setLoadedTranslation] = useState<BibleTranslation | null>(null);
+  
   const selectedTranslation = useMemo(
-    () => getTranslationById(selectedTranslationId) || bibleTranslations[0],
-    [selectedTranslationId]
+    () => loadedTranslation || getTranslationById(selectedTranslationId) || bibleTranslations[0],
+    [selectedTranslationId, loadedTranslation]
   );
+  
+  // Load JSON translation when ID changes
+  useEffect(() => {
+    const loadTranslation = async () => {
+      const tsTranslation = getTranslationById(selectedTranslationId);
+      if (tsTranslation) {
+        setLoadedTranslation(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      const jsonTranslation = await loadTranslationFromJSON(selectedTranslationId);
+      if (jsonTranslation) {
+        setLoadedTranslation(jsonTranslation);
+      }
+      setIsLoading(false);
+    };
+    
+    loadTranslation();
+  }, [selectedTranslationId]);
 
   const searchService = useMemo(() => new SearchService(selectedTranslationId), [selectedTranslationId]);
 
@@ -105,17 +129,22 @@ const App = () => {
   const firstBook = bookKeys[0] ?? "";
 
   useEffect(() => {
-    if (!appState.currentBook) {
+    if (!appState.currentBook && firstBook) {
+      console.log('Setting initial book:', firstBook);
       setAppState(prev => ({ ...prev, currentBook: firstBook }));
     }
   }, [selectedTranslation, firstBook, appState.currentBook]);
-
-
 
   useEffect(() => {
     registerServiceWorker();
     setupGlobalErrorHandling();
     preloadCriticalComponents();
+    
+    // Initialize CSRF token
+    if (!csrfToken.get()) {
+      const token = csrfToken.generate();
+      csrfToken.store(token);
+    }
   }, []);
   
   useEffect(() => {
@@ -130,7 +159,7 @@ const App = () => {
       }
       
       // Update SEO meta tags
-      const title = `${appState.currentBook} ${appState.currentChapter} - GospelHub`;
+      const title = `${appState.currentBook} ${appState.currentChapter} - Gospel Hub`;
       const description = `Read ${appState.currentBook} chapter ${appState.currentChapter} in the ${selectedTranslation.name} translation`;
       const url = `https://gospelhub.space/${encodeURIComponent(appState.currentBook)}/${appState.currentChapter}`;
       updateMetaTags(title, description, url);
@@ -162,31 +191,35 @@ const App = () => {
   }, []);
 
   const chapterOptions = useMemo(() => {
-    if (!appState.currentBook) {
+    if (!appState.currentBook || !selectedTranslation.data[appState.currentBook]) {
       return [] as number[];
     }
-    return selectedTranslation.data[appState.currentBook]?.chapters ?? [];
+    return selectedTranslation.data[appState.currentBook].chapters ?? [];
   }, [appState.currentBook, selectedTranslation]);
 
   const currentVerses = useMemo(() => {
-    if (!appState.currentBook) {
+    if (!appState.currentBook || !selectedTranslation.data[appState.currentBook]) {
       return [];
     }
-    return selectedTranslation.data[appState.currentBook]?.verses[appState.currentChapter] ?? [];
+    const bookData = selectedTranslation.data[appState.currentBook];
+    return bookData.verses[appState.currentChapter] ?? [];
   }, [appState, selectedTranslation]);
 
   const handleSearch = useCallback(async (query: string) => {
-    errorReporter.trackInteraction('search', { query: query.substring(0, 50) });
-    if (!query.trim()) {
+    // Sanitize search query to prevent XSS
+    const sanitizedQuery = security.sanitizeSearchQuery(query);
+    errorReporter.trackInteraction('search', { query: sanitizedQuery.substring(0, 50) });
+    
+    if (!sanitizedQuery.trim()) {
       setSearchResults([]);
       return;
     }
     setIsLoading(true);
     try {
-      const result = await searchService.searchBible(query);
+      const result = await searchService.searchBible(sanitizedQuery);
       setSearchResults(result.results);
     } catch (error) {
-      console.error("Search error:", error);
+      errorReporter.logError(error as Error, 'Search operation failed');
       setSearchResults([]);
     } finally {
       setIsLoading(false);
@@ -260,7 +293,7 @@ const App = () => {
           background: `linear-gradient(135deg, ${currentTheme.colors.background} 0%, ${currentTheme.colors.surface} 100%)`
         }}
         role="main"
-        aria-label="Bible reader application"
+        aria-label="Gospel Hub application"
       >
         {displayVerses.length > 0 && !searchTerm.trim() && (
           <ReadingProgressBar 
@@ -281,7 +314,7 @@ const App = () => {
             {selectedTranslation.name}
           </p>
           <h1 className="mb-4 sm:mb-6 text-4xl sm:text-6xl lg:text-7xl font-light leading-tight tracking-tight" style={{ color: currentTheme.colors.text }}>
-            Daily <span className="font-semibold" style={{ color: currentTheme.colors.primary }}>Bible</span> Reader
+            <span className="font-semibold" style={{ color: currentTheme.colors.primary }}>Gospel</span> Hub
           </h1>
           <div className="flex flex-wrap gap-3">
 
@@ -385,7 +418,15 @@ const App = () => {
               {isOnline ? '💾' : '📱'} Offline
             </button>
             <button
-              onClick={() => window.location.href = '/enhanced'}
+              onClick={() => {
+                try {
+                  window.location.href = '/enhanced';
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                  // Fallback navigation
+                  window.open('/enhanced', '_self');
+                }
+              }}
               className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
               style={{ 
                 borderColor: currentTheme.colors.border,
@@ -459,13 +500,16 @@ const App = () => {
                     <select
                       value={selectedTranslationId}
                       onChange={(event) => {
-                        const newId = event.target.value;
-                        setSelectedTranslationId(newId);
-                        searchService.setTranslation(newId);
+                        const newId = security.sanitizeId(event.target.value);
+                        if (security.validateTranslationId(newId)) {
+                          setSelectedTranslationId(newId);
+                          setIsLoading(true);
+                          searchService.setTranslation(newId);
+                        }
                       }}
                       className="w-full rounded-xl border border-stone-200 bg-white px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base text-stone-900 shadow-sm transition-all hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
                     >
-                      {bibleTranslations.map((translation) => (
+                      {getAllTranslations().map((translation) => (
                         <option key={translation.id} value={translation.id}>
                           {translation.name} ({translation.abbreviation})
                         </option>
@@ -477,7 +521,12 @@ const App = () => {
                     <span className="mb-2 block text-xs sm:text-sm font-medium text-stone-600">Book</span>
                     <select
                       value={appState.currentBook}
-                      onChange={(event) => setAppState(prev => ({ ...prev, currentBook: event.target.value, currentVerse: "all" }))}
+                      onChange={(event) => {
+                        const bookName = event.target.value;
+                        if (security.validateBookName(bookName)) {
+                          setAppState(prev => ({ ...prev, currentBook: bookName, currentVerse: "all" }));
+                        }
+                      }}
                       className="w-full rounded-xl border border-stone-200 bg-white px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base text-stone-900 shadow-sm transition-all hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
                     >
                       {bookKeys.map((book) => (
@@ -492,7 +541,12 @@ const App = () => {
                     <span className="mb-2 block text-xs sm:text-sm font-medium text-stone-600">Chapter</span>
                     <select
                       value={appState.currentChapter}
-                      onChange={(event) => setAppState(prev => ({ ...prev, currentChapter: Number(event.target.value), currentVerse: "all" }))}
+                      onChange={(event) => {
+                        const chapter = Number(event.target.value);
+                        if (security.validateChapter(chapter)) {
+                          setAppState(prev => ({ ...prev, currentChapter: chapter, currentVerse: "all" }));
+                        }
+                      }}
                       className="w-full rounded-xl border border-stone-200 bg-white px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base text-stone-900 shadow-sm transition-all hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
                     >
                       {chapterOptions.map((chapter) => (
@@ -546,28 +600,74 @@ const App = () => {
                       />
                     </LazyWrapper>
                     
-                    {appState.currentVerse !== "all" && typeof appState.currentVerse === "number" && (
-                      <>
-                        <LazyWrapper>
-                          <LazyCommentary
-                            book={appState.currentBook}
-                            chapter={appState.currentChapter}
-                            verse={appState.currentVerse}
-                          />
-                        </LazyWrapper>
-                        
-                        <LazyWrapper>
-                          <LazyCrossReferences
-                            book={appState.currentBook}
-                            chapter={appState.currentChapter}
-                            verse={appState.currentVerse}
-                            onReferenceClick={(book, chapter, verse) => {
-                              setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
-                            }}
-                          />
-                        </LazyWrapper>
-                      </>
-                    )}
+                    <div className="space-y-4">
+                      {(() => {
+                        const refKey = `${appState.currentBook}:${appState.currentChapter}:1`;
+                        const refs = crossReferences[refKey] || [];
+                        return (
+                          <div className="p-4 rounded-lg border" style={{
+                            borderColor: currentTheme.colors.border,
+                            backgroundColor: currentTheme.colors.background + '40'
+                          }}>
+                            <h4 className="font-medium mb-3" style={{ color: currentTheme.colors.text }}>🔗 Cross References ({refs.length})</h4>
+                            <div className="space-y-2 text-sm">
+                              {refs.map(ref => {
+                                const [book, chapter, verse] = ref.split(':');
+                                return (
+                                  <div key={ref} className="cursor-pointer hover:opacity-70" style={{ color: currentTheme.colors.primary }}
+                                    onClick={() => setAppState({ currentBook: book, currentChapter: parseInt(chapter), currentVerse: parseInt(verse) })}>
+                                    {ref.replace(':', ' ')} 
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {(() => {
+                        const bookChars = characters[appState.currentBook] || [];
+                        return (
+                          <div className="p-4 rounded-lg border" style={{
+                            borderColor: currentTheme.colors.border,
+                            backgroundColor: currentTheme.colors.background + '40'
+                          }}>
+                            <h4 className="font-medium mb-3" style={{ color: currentTheme.colors.text }}>👤 Characters ({bookChars.length})</h4>
+                            <div className="space-y-2 text-sm">
+                              {bookChars.map(char => (
+                                <div key={char.name} className="flex justify-between items-center">
+                                  <span style={{ color: currentTheme.colors.text }}>{char.name}</span>
+                                  <span className="text-xs px-2 py-1 rounded" style={{ 
+                                    backgroundColor: currentTheme.colors.primary + '20',
+                                    color: currentTheme.colors.primary 
+                                  }}>{char.role}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {(() => {
+                        const bookThemes = themes[appState.currentBook] || [];
+                        return (
+                          <div className="p-4 rounded-lg border" style={{
+                            borderColor: currentTheme.colors.border,
+                            backgroundColor: currentTheme.colors.background + '40'
+                          }}>
+                            <h4 className="font-medium mb-3" style={{ color: currentTheme.colors.text }}>📚 Themes ({bookThemes.length})</h4>
+                            <div className="space-y-2 text-sm">
+                              {bookThemes.map(theme => (
+                                <div key={theme.theme} className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.color }}></div>
+                                  <span style={{ color: currentTheme.colors.text }}>{theme.theme}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -637,12 +737,13 @@ const App = () => {
                   ) : (
                     <div className="space-y-2">
                       {displayVerses.map((item, index) => {
-                        const verseData = "verse" in item ? {
-                          book: item.book || appState.currentBook,
-                          chapter: item.chapter || appState.currentChapter,
-                          verse: item.verse,
-                          text: item.text
-                        } : item.verse;
+                        // Handle direct verse objects from KJV data
+                        const verseData = item.book ? item : {
+                          book: appState.currentBook,
+                          chapter: appState.currentChapter,
+                          verse: item.verse || index + 1,
+                          text: item.text || item
+                        };
                         
                         return (
                           <VerseHighlighter
@@ -655,9 +756,7 @@ const App = () => {
                             <div 
                               className="p-3 rounded-lg hover:bg-opacity-50 transition-all cursor-pointer"
                               style={{ 
-                                backgroundColor: currentTheme.colors.background + '40',
-                                direction: currentTranslation.direction,
-                                textAlign: currentTranslation.direction === 'rtl' ? 'right' : 'left'
+                                backgroundColor: currentTheme.colors.background + '40'
                               }}
                               onClick={() => {
                                 setSelectedWord(verseData.text.split(' ')[0]);
@@ -666,7 +765,7 @@ const App = () => {
                             >
                               <div className="flex items-center gap-2">
                                 <span 
-                                  className={`font-medium ${currentTranslation.direction === 'rtl' ? 'ml-2' : 'mr-2'}`}
+                                  className="font-medium mr-2"
                                   style={{ color: currentTheme.colors.primary }}
                                 >
                                   {verseData.verse}
