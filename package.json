@@ -3,7 +3,7 @@
     "private": true,
     "version": "1.0.0",
     "type": "module",
-    "homepage": "https://gospelhub.vercel.app",
+    "homepage": "https://gospelhub.space",
     "scripts": {
       "dev": "vite",
       "build": "vite build",
