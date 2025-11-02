@@ -118,6 +118,50 @@ export interface BibleReference {
     booksAhead: number;
   }
   
+  // Study Tools Types
+  export interface WordStudy {
+    word: string;
+    original: string;
+    transliteration: string;
+    strongsNumber: string;
+    definition: string;
+    usage: string[];
+    etymology: string;
+  }
+
+  export interface Commentary {
+    id: string;
+    author: string;
+    title: string;
+    content: string;
+    reference: BibleReference;
+    type: 'verse' | 'chapter' | 'book';
+  }
+
+  export interface CrossReference {
+    from: BibleReference;
+    to: BibleReference;
+    relationship: 'parallel' | 'prophecy' | 'fulfillment' | 'theme' | 'quote';
+    strength: number;
+  }
+
+  export interface BookIntroduction {
+    book: string;
+    author: string;
+    dateWritten: string;
+    audience: string;
+    purpose: string;
+    keyThemes: string[];
+    outline: { title: string; chapters: string }[];
+    timeline: { event: string; date: string; reference?: string }[];
+  }
+
+  export interface ParallelView {
+    translations: string[];
+    syncScroll: boolean;
+    highlightDifferences: boolean;
+  }
+  
   export function isSingleVerse(reference: BibleReference): reference is BibleReference & { verse: number } {
     return reference.verse !== undefined;
   }

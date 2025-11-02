@@ -8,6 +8,11 @@ import { SearchService } from "./search";
 
 import { ThemeBuilder } from "./components/ThemeBuilder";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
+import { ParallelView } from "./components/study/ParallelView";
+import { WordStudy } from "./components/study/WordStudy";
+import { Commentary } from "./components/study/Commentary";
+import { CrossReferences } from "./components/study/CrossReferences";
+import { BookIntroduction } from "./components/study/BookIntroduction";
 import { themeManager } from "./themes";
 import { analyticsManager } from "./analytics";
 import { performanceManager } from "./performance";
@@ -25,6 +30,10 @@ const App = () => {
 
   const [showThemeBuilder, setShowThemeBuilder] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showStudyTools, setShowStudyTools] = useState(false);
+  const [showBookIntro, setShowBookIntro] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [parallelConfig, setParallelConfig] = useState({ translations: [selectedTranslationId], syncScroll: true, highlightDifferences: false });
   const [currentTheme, setCurrentTheme] = useState(themeManager.getCurrentTheme());
 
   const selectedTranslation = useMemo(
@@ -138,11 +147,33 @@ const App = () => {
             >
               📊 Analytics
             </button>
+            <button
+              onClick={() => setShowStudyTools(!showStudyTools)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: showStudyTools ? currentTheme.colors.primary : currentTheme.colors.surface,
+                color: showStudyTools ? 'white' : currentTheme.colors.text
+              }}
+            >
+              📚 Study Tools
+            </button>
+            <button
+              onClick={() => setShowBookIntro(true)}
+              className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
+              style={{ 
+                borderColor: currentTheme.colors.border,
+                backgroundColor: currentTheme.colors.surface,
+                color: currentTheme.colors.text
+              }}
+            >
+              📖 Book Intro
+            </button>
           </div>
         </motion.header>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-          <section className="lg:col-span-5">
+          <section className={showStudyTools ? "lg:col-span-4" : "lg:col-span-5"}>
             <motion.div
               className="sticky top-8 space-y-4 sm:space-y-6"
               initial={{ opacity: 0, x: -20 }}
@@ -226,7 +257,53 @@ const App = () => {
             </motion.div>
           </section>
 
-          <section className="lg:col-span-7">
+          {showStudyTools && (
+            <section className="lg:col-span-4">
+              <motion.div
+                className="sticky top-8 space-y-6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <div className="rounded-2xl sm:rounded-3xl border p-6 shadow-lg backdrop-blur-sm theme-transition" style={{
+                  borderColor: currentTheme.colors.border,
+                  backgroundColor: currentTheme.colors.surface + 'CC'
+                }}>
+                  <h3 className="text-xl font-light mb-4" style={{ color: currentTheme.colors.text }}>Study Tools</h3>
+                  
+                  <div className="space-y-6">
+                    <ParallelView
+                      book={appState.currentBook}
+                      chapter={appState.currentChapter}
+                      config={parallelConfig}
+                      onConfigChange={setParallelConfig}
+                    />
+                    
+                    {appState.currentVerse !== "all" && typeof appState.currentVerse === "number" && (
+                      <>
+                        <Commentary
+                          book={appState.currentBook}
+                          chapter={appState.currentChapter}
+                          verse={appState.currentVerse}
+                        />
+                        
+                        <CrossReferences
+                          book={appState.currentBook}
+                          chapter={appState.currentChapter}
+                          verse={appState.currentVerse}
+                          onReferenceClick={(book, chapter, verse) => {
+                            setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </section>
+          )}
+
+          <section className={showStudyTools ? "lg:col-span-4" : "lg:col-span-7"}>
             <motion.div
               className="rounded-2xl sm:rounded-3xl border border-stone-200/60 bg-white/80 p-6 sm:p-8 shadow-lg backdrop-blur-sm"
               initial={{ opacity: 0, x: 20 }}
@@ -260,13 +337,25 @@ const App = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="rounded-xl border border-stone-100 bg-gradient-to-r from-stone-50/50 to-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
+                          className="rounded-xl border p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
+                          style={{
+                            borderColor: currentTheme.colors.border,
+                            backgroundColor: currentTheme.colors.background
+                          }}
                         >
-                          <span className="text-xs sm:text-sm font-medium text-amber-700 block mb-2">
+                          <span className="text-xs sm:text-sm font-medium block mb-2" style={{ color: currentTheme.colors.primary }}>
                             {item.book || verse.book} {item.chapter || verse.chapter}:{verse}
                           </span>
-                          <p className="text-sm sm:text-base leading-relaxed text-stone-800">
-                            {text}
+                          <p className="text-sm sm:text-base leading-relaxed" style={{ color: currentTheme.colors.text }}>
+                            {text.split(' ').map((word: string, wordIndex: number) => (
+                              <span
+                                key={wordIndex}
+                                className="cursor-pointer hover:bg-opacity-20 hover:bg-yellow-300 rounded px-1 transition-colors"
+                                onClick={() => setSelectedWord(word.replace(/[^a-zA-Z]/g, ''))}
+                              >
+                                {word}{' '}
+                              </span>
+                            ))}
                           </p>
                         </motion.div>
                       );
@@ -287,6 +376,17 @@ const App = () => {
       <AnalyticsDashboard 
         isOpen={showAnalytics} 
         onClose={() => setShowAnalytics(false)} 
+      />
+      
+      <WordStudy 
+        word={selectedWord} 
+        onClose={() => setSelectedWord(null)} 
+      />
+      
+      <BookIntroduction 
+        book={appState.currentBook} 
+        isOpen={showBookIntro} 
+        onClose={() => setShowBookIntro(false)} 
       />
     </main>
   );
