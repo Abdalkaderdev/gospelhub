@@ -6,9 +6,9 @@
     "homepage": "https://gospelhub.space",
     "scripts": {
         "dev": "vite",
-        "build": "npm run process-xml && vite build",
+        "build": "vite build",
         "preview": "vite preview",
-        "process-xml": "node scripts/process-essential-translations.js",
+
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build"
     },

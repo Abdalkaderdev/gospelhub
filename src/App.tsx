@@ -6,7 +6,7 @@ import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
 import { SearchService } from "./search";
 import { TranslationSelector } from "./components/TranslationSelector";
-import { useXMLBible } from "./hooks/useXMLBible";
+
 
 import { 
   LazyAnalyticsDashboard,
@@ -84,14 +84,14 @@ const App = () => {
   const [parallelTranslations, setParallelTranslations] = useState<any[]>([]);
   const [loadedTranslations, setLoadedTranslations] = useState<Record<string, any>>({});
   const { currentTranslation, loading: translationLoading, loadTranslation } = useTranslation(selectedTranslationId);
-  const [xmlTranslationId, setXmlTranslationId] = useState('eng-kjv');
+
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [parallelConfig, setParallelConfig] = useState({ translations: [selectedTranslationId], syncScroll: true, highlightDifferences: false });
   const [keyboardNavigation, setKeyboardNavigation] = useState(false);
   const [showThemeSwitcher, setShowThemeSwitcher] = useState(false);
   const { currentTheme } = useTheme();
   const { isOnline } = usePWA();
-  const { books: xmlBooks, loading: xmlLoading, error: xmlError } = useXMLBible(xmlTranslationId);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const selectedTranslation = useMemo(
@@ -920,9 +920,9 @@ const App = () => {
               </div>
               <div className="p-6 max-h-96 overflow-y-auto">
                 <TranslationSelector
-                  selectedTranslation={xmlTranslationId}
+                  selectedTranslation={currentTranslation.id}
                   onTranslationChange={(id) => {
-                    setXmlTranslationId(id);
+                    loadTranslation(id);
                     setShowTranslationSelector(false);
                   }}
                 />
