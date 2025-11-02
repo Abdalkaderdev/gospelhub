@@ -5,7 +5,7 @@ import { BibleReference, AppState, NavigationDirection, BibleVerse } from "./typ
 import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
 import { SearchService } from "./search";
-import { VerseOfTheDay } from "./components/VerseOfTheDay";
+
 import { ThemeBuilder } from "./components/ThemeBuilder";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { themeManager } from "./themes";
@@ -22,7 +22,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showVerseOfDay, setShowVerseOfDay] = useState(true);
+
   const [showThemeBuilder, setShowThemeBuilder] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(themeManager.getCurrentTheme());
@@ -94,27 +94,7 @@ const App = () => {
     setAppState(newState);
   };
 
-  const dailyVerse = currentVerses.length > 0 ? currentVerses[0] : null;
   const displayVerses = searchTerm.trim() ? searchResults : currentVerses;
-
-  if (showVerseOfDay && dailyVerse) {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setShowVerseOfDay(false)}
-          className="fixed top-4 right-4 z-50 p-2 rounded-full bg-white/80 hover:bg-white shadow-lg"
-        >
-          ✕
-        </button>
-        <VerseOfTheDay
-          verse={dailyVerse}
-          onNavigate={handleNavigate}
-          isLoading={isLoading}
-          translationId={selectedTranslationId}
-        />
-      </div>
-    );
-  }
 
   return (
     <main className="min-h-screen theme-transition px-4 sm:px-6 py-8 sm:py-16" style={{
@@ -135,13 +115,7 @@ const App = () => {
             Daily <span className="font-semibold" style={{ color: currentTheme.colors.primary }}>Bible</span> Reader
           </h1>
           <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setShowVerseOfDay(true)}
-              className="px-4 py-2 rounded-lg text-white hover:opacity-90 transition-opacity text-sm"
-              style={{ backgroundColor: currentTheme.colors.primary }}
-            >
-              View Verse of the Day
-            </button>
+
             <button
               onClick={() => setShowThemeBuilder(true)}
               className="px-4 py-2 rounded-lg border hover:opacity-90 transition-opacity text-sm"
