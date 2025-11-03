@@ -2,9 +2,7 @@ import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { MainLayout } from './layouts';
 import { bibleDataService, BibleVerse } from '../services/BibleDataService';
-import { CrossReferences } from '../components/study/CrossReferences';
-import { Commentary } from '../components/study/Commentary';
-import { WordStudy } from '../components/study/WordStudy';
+import { LazyCrossReferences, LazyCommentary, LazyWordStudy } from '../components/lazy/LazyComponents';
 
 export const BibleReader = () => {
   const { currentTheme } = useTheme();
@@ -193,7 +191,10 @@ export const BibleReader = () => {
                           <span
                             key={i}
                             className="cursor-pointer hover:bg-amber-200"
-                            onClick={() => setSelectedWord(word)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedWord(word.replace(/[.,;?!]/g, ''));
+                            }}
                           >
                             {word}{' '}
                           </span>
@@ -213,16 +214,18 @@ export const BibleReader = () => {
                 className="mt-6 rounded-lg shadow-sm p-6"
                 style={{ backgroundColor: currentTheme.colors.surface }}
               >
-                <CrossReferences
-                  book={currentBook}
-                  chapter={currentChapter}
-                  verse={selectedVerse}
-                  onReferenceClick={(book, chapter, verse) => {
-                    setCurrentBook(book);
-                    setCurrentChapter(chapter);
-                    setSelectedVerse(verse);
-                  }}
-                />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <LazyCrossReferences
+                    book={currentBook}
+                    chapter={currentChapter}
+                    verse={selectedVerse}
+                    onReferenceClick={(book, chapter, verse) => {
+                      setCurrentBook(book);
+                      setCurrentChapter(chapter);
+                      setSelectedVerse(verse);
+                    }}
+                  />
+                </Suspense>
               </div>
             )}
           </div>
@@ -232,16 +235,20 @@ export const BibleReader = () => {
                 className="rounded-lg shadow-sm p-6"
                 style={{ backgroundColor: currentTheme.colors.surface }}
               >
-                <Commentary
-                  book={currentBook}
-                  chapter={currentChapter}
-                  verse={selectedVerse || undefined}
-                />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <LazyCommentary
+                    book={currentBook}
+                    chapter={currentChapter}
+                    verse={selectedVerse || undefined}
+                  />
+                </Suspense>
               </div>
             </div>
           )}
         </div>
-        <WordStudy word={selectedWord} onClose={() => setSelectedWord(null)} />
+        <Suspense fallback={<div>Loading...</div>}>
+          <LazyWordStudy word={selectedWord} onClose={() => setSelectedWord(null)} />
+        </Suspense>
       </div>
     </MainLayout>
   );
