@@ -1,14 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { MainLayout } from './layouts';
-import { SearchService } from '../search';
+import { bibleDataService } from '../services/BibleDataService';
 
 interface SearchResult {
   book: string;
   chapter: number;
   verse: number;
   text: string;
-  translation: string;
   reference: string;
 }
 
@@ -17,9 +16,9 @@ export const Search = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [translationId, setTranslationId] = useState('all');
-  const searchService = new SearchService();
-  const allTranslations = searchService.getTranslations();
+  const [translationId, setTranslationId] = useState('eng-kjv');
+
+  const allTranslations = bibleDataService.getTranslations().filter(t => t.language === 'English');
 
   const searchBible = useCallback(async () => {
     if (!query.trim()) {
@@ -29,15 +28,13 @@ export const Search = () => {
 
     setLoading(true);
     try {
-      const filters = translationId === 'all' ? {} : { translationId };
-      const searchResults = await searchService.searchBible(query, filters);
-      const formattedResults: SearchResult[] = searchResults.results.map(result => ({
-        book: result.reference.book,
-        chapter: result.reference.chapter,
-        verse: result.reference.verse,
+      const searchResults = await bibleDataService.searchVerses(translationId, query, 50);
+      const formattedResults: SearchResult[] = searchResults.map(result => ({
+        book: result.book,
+        chapter: result.chapter,
+        verse: result.verse.number,
         text: result.verse.text,
-        translation: result.translation,
-        reference: `${result.reference.book} ${result.reference.chapter}:${result.reference.verse}`
+        reference: `${result.book} ${result.chapter}:${result.verse.number}`
       }));
       setResults(formattedResults);
     } catch (error) {
@@ -115,7 +112,6 @@ export const Search = () => {
                 borderColor: currentTheme.colors.border
               }}
             >
-              <option value="all">All Translations</option>
               {allTranslations.map(translation => (
                 <option key={translation.id} value={translation.id}>
                   {translation.name} ({translation.abbreviation})
@@ -148,7 +144,7 @@ export const Search = () => {
                     className="font-semibold mb-1"
                     style={{ color: currentTheme.colors.accent }}
                   >
-                    {result.reference} ({result.translation})
+                    {result.reference}
                   </div>
                   <div style={{ color: currentTheme.colors.text }}>
                     {highlightText(result.text, query)}
