@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
-import { bibleTranslations, getTranslationById, defaultTranslationId, getAllTranslations, loadTranslationFromJSON } from "./data";
+import { bibleTranslations, getTranslationById, defaultTranslationId, getAllTranslations } from "./data";
 import { BibleReference, AppState, NavigationDirection, BibleVerse } from "./types";
 import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
