@@ -28,13 +28,13 @@ export class SearchService {
     }
 
     let allBooks = Object.keys(translation.data);
-    
+
     // Apply testament filter
     if (filters.testament && filters.testament !== 'all') {
       const testamentBooks = filters.testament === 'old' ? this.oldTestamentBooks : this.newTestamentBooks;
       allBooks = allBooks.filter(book => testamentBooks.includes(book));
     }
-    
+
     // Apply book filter
     if (filters.book) {
       allBooks = allBooks.filter(book => book === filters.book);
@@ -44,20 +44,20 @@ export class SearchService {
 
     for (const book of allBooks) {
       const bookData = translation.data[book];
-      
+
       for (const chapter of bookData.chapters) {
         const verses = bookData.verses[chapter] || [];
-        
+
         for (const verse of verses) {
           let matches = false;
-          
+
           if (filters.phraseMatch) {
             matches = verse.text.toLowerCase().includes(query.toLowerCase());
           } else {
             const searchWords = query.toLowerCase().split(' ');
             matches = searchWords.some(word => verse.text.toLowerCase().includes(word));
           }
-          
+
           if (matches) {
             results.push({
               reference: {
