@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { MainLayout } from './layouts';
 import { bibleDataService, BibleVerse } from '../services/BibleDataService';
+import { LazyCrossReferences, LazyCommentary, LazyWordStudy } from '../components/lazy/LazyComponents';
 
 export const BibleReader = () => {
   const { currentTheme } = useTheme();
@@ -10,6 +11,9 @@ export const BibleReader = () => {
   const [currentChapter, setCurrentChapter] = useState(1);
   const [verses, setVerses] = useState<BibleVerse[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
+  const [showCommentary, setShowCommentary] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
 
   const availableTranslations = bibleDataService.getTranslations().filter(t => t.language === 'English');
   const selectedTranslation = bibleDataService.getTranslation(selectedTranslationId);
@@ -139,46 +143,109 @@ export const BibleReader = () => {
           </div>
         </div>
 
-        <div 
-          className="rounded-lg shadow-sm p-6"
-          style={{ backgroundColor: currentTheme.colors.surface }}
-        >
-          <h2 
-            className="text-xl font-semibold mb-4"
-            style={{ color: currentTheme.colors.text }}
-          >
-            {currentBook} {currentChapter} ({selectedTranslation?.abbreviation || 'KJV'})
-          </h2>
+        <div className="flex gap-6">
+          <div className="w-full">
+            <div
+              className="rounded-lg shadow-sm p-6"
+              style={{ backgroundColor: currentTheme.colors.surface }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2
+                  className="text-xl font-semibold"
+                  style={{ color: currentTheme.colors.text }}
+                >
+                  {currentBook} {currentChapter} ({selectedTranslation?.abbreviation || 'KJV'})
+                </h2>
+                <button
+                  onClick={() => setShowCommentary(!showCommentary)}
+                  className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-amber-100"
+                  style={{ color: currentTheme.colors.accent }}
+                >
+                  {showCommentary ? 'Hide' : 'Show'} Commentary
+                </button>
+              </div>
           
-          {loading ? (
-            <div className="text-center py-8">
-              <div style={{ color: currentTheme.colors.textSecondary }}>Loading...</div>
-            </div>
-          ) : verses.length > 0 ? (
-            <div className="space-y-3">
-              {verses.map((verse, index) => (
-                <div key={index} className="flex gap-3">
-                  <span 
-                    className="font-semibold min-w-[2rem]"
-                    style={{ color: currentTheme.colors.accent }}
-                  >
-                    {verse.number}
-                  </span>
-                  <span 
-                    className="leading-relaxed"
-                    style={{ color: currentTheme.colors.text }}
-                  >
-                    {verse.text}
-                  </span>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div style={{ color: currentTheme.colors.textSecondary }}>Loading...</div>
                 </div>
-              ))}
+              ) : verses.length > 0 ? (
+                <div className="space-y-3">
+                  {verses.map((verse, index) => (
+                    <div
+                      key={index}
+                      className={`flex gap-3 p-2 rounded-lg cursor-pointer ${selectedVerse === verse.number ? 'bg-amber-100' : ''}`}
+                      onClick={() => setSelectedVerse(verse.number)}
+                    >
+                      <span
+                        className="font-semibold min-w-[2rem]"
+                        style={{ color: currentTheme.colors.accent }}
+                      >
+                        {verse.number}
+                      </span>
+                      <span
+                        className="leading-relaxed"
+                        style={{ color: currentTheme.colors.text }}
+                      >
+                        {verse.text.split(' ').map((word, i) => (
+                          <span
+                            key={i}
+                            className="cursor-pointer hover:bg-amber-200"
+                            onClick={() => setSelectedWord(word)}
+                          >
+                            {word}{' '}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div style={{ color: currentTheme.colors.textSecondary }}>No verses available for this chapter</div>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <div style={{ color: currentTheme.colors.textSecondary }}>No verses available for this chapter</div>
+            {selectedVerse && (
+              <div
+                className="mt-6 rounded-lg shadow-sm p-6"
+                style={{ backgroundColor: currentTheme.colors.surface }}
+              >
+                <Suspense fallback={<div>Loading...</div>}>
+                  <LazyCrossReferences
+                    book={currentBook}
+                    chapter={currentChapter}
+                    verse={selectedVerse}
+                    onReferenceClick={(book, chapter, verse) => {
+                      setCurrentBook(book);
+                      setCurrentChapter(chapter);
+                      setSelectedVerse(verse);
+                    }}
+                  />
+                </Suspense>
+              </div>
+            )}
+          </div>
+          {showCommentary && (
+            <div className="w-1/3">
+              <div
+                className="rounded-lg shadow-sm p-6"
+                style={{ backgroundColor: currentTheme.colors.surface }}
+              >
+                <Suspense fallback={<div>Loading...</div>}>
+                  <LazyCommentary
+                    book={currentBook}
+                    chapter={currentChapter}
+                    verse={selectedVerse || undefined}
+                  />
+                </Suspense>
+              </div>
             </div>
           )}
         </div>
+        <Suspense fallback={<div>Loading...</div>}>
+          <LazyWordStudy word={selectedWord} onClose={() => setSelectedWord(null)} />
+        </Suspense>
       </div>
     </MainLayout>
   );

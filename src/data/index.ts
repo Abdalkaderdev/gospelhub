@@ -16,3 +16,5 @@ export function getBibleTranslations() {
 export function getAllTranslations() {
   return bibleDataService.getTranslations();
 }
+
+export const bibleTranslations = getAllTranslations();
