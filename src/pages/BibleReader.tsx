@@ -2,7 +2,9 @@ import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { MainLayout } from './layouts';
 import { bibleDataService, BibleVerse } from '../services/BibleDataService';
-import { LazyCrossReferences, LazyCommentary, LazyWordStudy } from '../components/lazy/LazyComponents';
+import { CrossReferences } from '../components/study/CrossReferences';
+import { Commentary } from '../components/study/Commentary';
+import { WordStudy } from '../components/study/WordStudy';
 
 export const BibleReader = () => {
   const { currentTheme } = useTheme();
@@ -211,18 +213,16 @@ export const BibleReader = () => {
                 className="mt-6 rounded-lg shadow-sm p-6"
                 style={{ backgroundColor: currentTheme.colors.surface }}
               >
-                <Suspense fallback={<div>Loading...</div>}>
-                  <LazyCrossReferences
-                    book={currentBook}
-                    chapter={currentChapter}
-                    verse={selectedVerse}
-                    onReferenceClick={(book, chapter, verse) => {
-                      setCurrentBook(book);
-                      setCurrentChapter(chapter);
-                      setSelectedVerse(verse);
-                    }}
-                  />
-                </Suspense>
+                <CrossReferences
+                  book={currentBook}
+                  chapter={currentChapter}
+                  verse={selectedVerse}
+                  onReferenceClick={(book, chapter, verse) => {
+                    setCurrentBook(book);
+                    setCurrentChapter(chapter);
+                    setSelectedVerse(verse);
+                  }}
+                />
               </div>
             )}
           </div>
@@ -232,20 +232,16 @@ export const BibleReader = () => {
                 className="rounded-lg shadow-sm p-6"
                 style={{ backgroundColor: currentTheme.colors.surface }}
               >
-                <Suspense fallback={<div>Loading...</div>}>
-                  <LazyCommentary
-                    book={currentBook}
-                    chapter={currentChapter}
-                    verse={selectedVerse || undefined}
-                  />
-                </Suspense>
+                <Commentary
+                  book={currentBook}
+                  chapter={currentChapter}
+                  verse={selectedVerse || undefined}
+                />
               </div>
             </div>
           )}
         </div>
-        <Suspense fallback={<div>Loading...</div>}>
-          <LazyWordStudy word={selectedWord} onClose={() => setSelectedWord(null)} />
-        </Suspense>
+        <WordStudy word={selectedWord} onClose={() => setSelectedWord(null)} />
       </div>
     </MainLayout>
   );

@@ -17,7 +17,7 @@ export const Search = () => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [translationId, setTranslationId] = useState('eng-kjv');
-  
+
   const allTranslations = bibleDataService.getTranslations().filter(t => t.language === 'English');
 
   const searchBible = useCallback(async () => {
@@ -96,17 +96,17 @@ export const Search = () => {
           </form>
           
           <div className="flex items-center gap-4">
-            <label 
+            <label
               className="text-sm font-medium"
               style={{ color: currentTheme.colors.text }}
             >
               Translation:
             </label>
-            <select 
+            <select
               value={translationId}
               onChange={(e) => setTranslationId(e.target.value)}
               className="px-3 py-1 border rounded"
-              style={{ 
+              style={{
                 backgroundColor: currentTheme.colors.background,
                 color: currentTheme.colors.text,
                 borderColor: currentTheme.colors.border
@@ -122,25 +122,25 @@ export const Search = () => {
         </div>
 
         {results.length > 0 && (
-          <div 
+          <div
             className="rounded-lg shadow-sm p-6"
             style={{ backgroundColor: currentTheme.colors.surface }}
           >
-            <h2 
+            <h2
               className="text-xl font-semibold mb-4"
               style={{ color: currentTheme.colors.text }}
             >
               Found {results.length} result{results.length !== 1 ? 's' : ''}
             </h2>
-            
+
             <div className="space-y-4">
               {results.map((result, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="border-b pb-4 last:border-b-0"
                   style={{ borderColor: currentTheme.colors.border }}
                 >
-                  <div 
+                  <div
                     className="font-semibold mb-1"
                     style={{ color: currentTheme.colors.accent }}
                   >
