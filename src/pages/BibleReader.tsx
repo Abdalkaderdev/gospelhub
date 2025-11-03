@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { MainLayout } from './layouts';
 import { bibleDataService, BibleVerse } from '../services/BibleDataService';
