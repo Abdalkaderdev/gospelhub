@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { MainLayout } from './layouts';
-import { bibleDataService } from '../services/BibleDataService';
+import { SearchService } from '../search';
 
 interface SearchResult {
   book: string;
   chapter: number;
   verse: number;
   text: string;
+  translation: string;
   reference: string;
 }
 
@@ -16,9 +17,9 @@ export const Search = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [translationId, setTranslationId] = useState('eng-kjv');
-  
-  const allTranslations = bibleDataService.getTranslations().filter(t => t.language === 'English');
+  const [translationId, setTranslationId] = useState('all');
+  const searchService = new SearchService();
+  const allTranslations = searchService.getTranslations();
 
   const searchBible = useCallback(async () => {
     if (!query.trim()) {
@@ -28,13 +29,15 @@ export const Search = () => {
 
     setLoading(true);
     try {
-      const searchResults = await bibleDataService.searchVerses(translationId, query, 50);
-      const formattedResults: SearchResult[] = searchResults.map(result => ({
-        book: result.book,
-        chapter: result.chapter,
-        verse: result.verse.number,
+      const filters = translationId === 'all' ? {} : { translationId };
+      const searchResults = await searchService.searchBible(query, filters);
+      const formattedResults: SearchResult[] = searchResults.results.map(result => ({
+        book: result.reference.book,
+        chapter: result.reference.chapter,
+        verse: result.reference.verse,
         text: result.verse.text,
-        reference: `${result.book} ${result.chapter}:${result.verse.number}`
+        translation: result.translation,
+        reference: `${result.reference.book} ${result.reference.chapter}:${result.reference.verse}`
       }));
       setResults(formattedResults);
     } catch (error) {
@@ -96,22 +99,23 @@ export const Search = () => {
           </form>
           
           <div className="flex items-center gap-4">
-            <label 
+            <label
               className="text-sm font-medium"
               style={{ color: currentTheme.colors.text }}
             >
               Translation:
             </label>
-            <select 
+            <select
               value={translationId}
               onChange={(e) => setTranslationId(e.target.value)}
               className="px-3 py-1 border rounded"
-              style={{ 
+              style={{
                 backgroundColor: currentTheme.colors.background,
                 color: currentTheme.colors.text,
                 borderColor: currentTheme.colors.border
               }}
             >
+              <option value="all">All Translations</option>
               {allTranslations.map(translation => (
                 <option key={translation.id} value={translation.id}>
                   {translation.name} ({translation.abbreviation})
@@ -122,29 +126,29 @@ export const Search = () => {
         </div>
 
         {results.length > 0 && (
-          <div 
+          <div
             className="rounded-lg shadow-sm p-6"
             style={{ backgroundColor: currentTheme.colors.surface }}
           >
-            <h2 
+            <h2
               className="text-xl font-semibold mb-4"
               style={{ color: currentTheme.colors.text }}
             >
               Found {results.length} result{results.length !== 1 ? 's' : ''}
             </h2>
-            
+
             <div className="space-y-4">
               {results.map((result, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="border-b pb-4 last:border-b-0"
                   style={{ borderColor: currentTheme.colors.border }}
                 >
-                  <div 
+                  <div
                     className="font-semibold mb-1"
                     style={{ color: currentTheme.colors.accent }}
                   >
-                    {result.reference}
+                    {result.reference} ({result.translation})
                   </div>
                   <div style={{ color: currentTheme.colors.text }}>
                     {highlightText(result.text, query)}
