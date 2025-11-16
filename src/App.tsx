@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
 import { bibleTranslations, getTranslationById, defaultTranslationId, getAllTranslations } from "./data";
-import { BibleReference, AppState, NavigationDirection, BibleVerse } from "./types";
+import { BibleReference, AppState, NavigationDirection } from "./types";
 import { isSingleVerse } from "./utils/guards";
 import { navigateChapter } from "./utils/navigation";
 import { SearchService } from "./search";
@@ -56,6 +56,17 @@ import { performanceManager } from "./performance";
 import { updateMetaTags, generateVerseShareData, generateStructuredData } from "./utils/seo";
 import { announceToScreenReader, KEYBOARD_KEYS } from "./utils/accessibility";
 import { crossReferences, characters, themes } from "./data/crossReferences";
+import { BibleTranslation } from "./types";
+
+const loadTranslationFromJSON = async (translationId: string): Promise<BibleTranslation | null> => {
+  try {
+    const translationModule = await import(`./data/${translationId}.ts`);
+    return translationModule.default;
+  } catch (error) {
+    console.error(`Error loading translation ${translationId}:`, error);
+    return null;
+  }
+};
 
 const App = () => {
   const [selectedTranslationId, setSelectedTranslationId] = useState(defaultTranslationId);
@@ -104,10 +115,10 @@ const App = () => {
   
   // Load JSON translation when ID changes
   useEffect(() => {
-    const loadTranslation = async () => {
+    const loadSelectedTranslation = async () => {
       const tsTranslation = getTranslationById(selectedTranslationId);
       if (tsTranslation) {
-        setLoadedTranslation(null);
+        setLoadedTranslation(tsTranslation);
         setIsLoading(false);
         return;
       }
@@ -120,7 +131,7 @@ const App = () => {
       setIsLoading(false);
     };
     
-    loadTranslation();
+    loadSelectedTranslation();
   }, [selectedTranslationId]);
 
   const searchService = useMemo(() => new SearchService(selectedTranslationId), [selectedTranslationId]);
