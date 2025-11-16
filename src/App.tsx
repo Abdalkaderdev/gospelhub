@@ -14,7 +14,14 @@ import {
   LazyWordStudy,
   LazyCommentary,
   LazyCrossReferences,
-  LazyBookIntroduction
+  LazyBookIntroduction,
+  LazyVerseHighlighter,
+  LazyTranslationSwitcher,
+  LazyBibleSearch,
+  LazyBookmarkSystem,
+  LazyReadingPlans,
+  LazyStudyTools,
+  LazyParallelBibleView
 } from "./components/lazy/LazyComponents";
 import { LazyWrapper } from "./components/lazy/LazyWrapper";
 import { PageTransition } from "./components/PageTransition";
@@ -31,8 +38,7 @@ import { LazyReadingPlanView, LazyThemeSwitcher, LazyOfflineManager } from "./co
 import { useTheme } from "./contexts/ThemeContext";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { VirtualizedVerseList } from "./components/optimized/VirtualizedVerseList";
-import { VerseHighlighter, HighlightsPanel } from "./components/VerseHighlighter";
-import { TranslationSwitcher } from "./components/TranslationSwitcher";
+import { HighlightsPanel } from "./components/VerseHighlighter";
 import { useTranslation } from "./hooks/useTranslation";
 import { EnhancedVerseText } from "./components/EnhancedVerseText";
 import { isOldTestament } from "./utils/bibleBooks";
@@ -40,13 +46,9 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { performanceMonitor, registerServiceWorker } from "./utils/performance";
 import { errorReporter, setupGlobalErrorHandling } from "./utils/errorReporting";
 import { preloadCriticalComponents } from "./utils/lazyLoading";
-import { BibleSearch } from "./components/BibleSearch";
 import { BookmarkButton, BookmarksPanel } from "./components/BookmarkSystem";
 import { SwipeGestureHandler } from "./components/SwipeGestureHandler";
 import { ChapterTransition } from "./components/ChapterTransition";
-import { ReadingPlans } from "./components/ReadingPlans";
-import { StudyTools } from "./components/StudyTools";
-import { ParallelBibleView } from "./components/ParallelBibleView";
 import { AdvancedStudyPanel } from "./components/AdvancedStudyPanel";
 import { usePWA } from "./hooks/usePWA";
 import { offlineSyncManager } from "./utils/offlineSync";
@@ -480,10 +482,11 @@ const App = () => {
             >
               📑 Bookmarks
             </button>
-            <TranslationSwitcher
-              currentTranslation={currentTranslation.id}
-              onTranslationChange={(id, data) => {
-                loadTranslation(id, data);
+            <Suspense fallback={<div>Loading...</div>}>
+              <LazyTranslationSwitcher
+                currentTranslation={currentTranslation.id}
+                onTranslationChange={(id, data) => {
+                  loadTranslation(id, data);
                 setSelectedTranslationId(id);
                 setLoadedTranslations(prev => ({ ...prev, [id]: { data } }));
               }}
@@ -757,10 +760,11 @@ const App = () => {
                         };
                         
                         return (
-                          <VerseHighlighter
-                            key={`${verseData.book}-${verseData.chapter}-${verseData.verse}`}
-                            book={verseData.book}
-                            chapter={verseData.chapter}
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <LazyVerseHighlighter
+                              key={`${verseData.book}-${verseData.chapter}-${verseData.verse}`}
+                              book={verseData.book}
+                              chapter={verseData.chapter}
                             verse={verseData.verse}
                             text={verseData.text}
                           >
@@ -838,19 +842,21 @@ const App = () => {
         />
       </LazyWrapper>
       
-      <ReadingPlans
-        isOpen={showReadingPlans}
-        onClose={() => setShowReadingPlans(false)}
-        onNavigate={(book, chapter) => {
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyReadingPlans
+          isOpen={showReadingPlans}
+          onClose={() => setShowReadingPlans(false)}
+          onNavigate={(book, chapter) => {
           setAppState({ currentBook: book, currentChapter: chapter, currentVerse: 'all' });
           setShowReadingPlans(false);
         }}
       />
       
-      <StudyTools
-        isOpen={showStudyToolsModal}
-        onClose={() => setShowStudyToolsModal(false)}
-        currentVerse={typeof appState.currentVerse === 'number' ? {
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyStudyTools
+          isOpen={showStudyToolsModal}
+          onClose={() => setShowStudyToolsModal(false)}
+          currentVerse={typeof appState.currentVerse === 'number' ? {
           book: appState.currentBook,
           chapter: appState.currentChapter,
           verse: appState.currentVerse
@@ -896,10 +902,11 @@ const App = () => {
                 </div>
               </div>
               <div className="p-6 max-h-96 overflow-y-auto">
-                <ParallelBibleView
-                  book={appState.currentBook}
-                  chapter={appState.currentChapter}
-                  translations={parallelTranslations.length > 0 ? parallelTranslations : [
+                <Suspense fallback={<div>Loading...</div>}>
+                  <LazyParallelBibleView
+                    book={appState.currentBook}
+                    chapter={appState.currentChapter}
+                    translations={parallelTranslations.length > 0 ? parallelTranslations : [
                     { id: currentTranslation.id, name: currentTranslation.name, data: currentTranslation }
                   ]}
                   onAddTranslation={() => {
@@ -967,10 +974,11 @@ const App = () => {
                 </div>
               </div>
               <div className="p-6 max-h-96 overflow-y-auto">
-                <BibleSearch
-                  translations={{
-                    [currentTranslation.id]: currentTranslation,
-                    ...loadedTranslations
+                <Suspense fallback={<div>Loading...</div>}>
+                  <LazyBibleSearch
+                    translations={{
+                      [currentTranslation.id]: currentTranslation,
+                      ...loadedTranslations
                   }}
                   onResultClick={(book, chapter, verse) => {
                     setAppState({ currentBook: book, currentChapter: chapter, currentVerse: verse });
